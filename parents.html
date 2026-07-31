@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parents — Red Rock Robotics</title>
+<link rel="icon" href="images/logos/logonobackground.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ================= CODE GATE ================= -->
+<div class="auth-wrap" id="gate">
+  <div class="auth-card">
+    <img class="auth-logo" src="images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+    <div class="num">TEAM 3006</div>
+    <h1>Parents</h1>
+    <p class="sub">Enter the parent code to access the scouting app, parent community, and meal calendar.</p>
+    <div class="auth-error" id="gateError"></div>
+    <div class="field">
+      <label for="parentCode">Parent code</label>
+      <input type="text" id="parentCode" autocomplete="off">
+    </div>
+    <button class="btn btn-grad" style="width:100%; justify-content:center;" id="gateBtn">Continue</button>
+  </div>
+</div>
+
+<!-- ================= PARENTS PAGE ================= -->
+<div id="parentsPage" style="display:none;">
+
+  <header class="topnav">
+    <a class="brand" href="index.html">
+      <img src="images/logos/logonobackground.png" alt="">
+      <div class="brand-text">
+        <div class="num">TEAM 3006</div>
+        <div class="name">Red Rock Robotics</div>
+      </div>
+    </a>
+    <div class="topnav-links">
+      <a href="index.html" id="mainSiteLink">Main Site</a>
+    </div>
+  </header>
+
+  <section class="subteam-hero">
+    <div class="eyebrow">Parent Resources</div>
+    <h1>Welcome, Parents</h1>
+    <p>Everything you need to follow along, get involved, and help feed a hungry build team.</p>
+  </section>
+
+  <section class="section">
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Scouting App</h3>
+        <p>Follow live match data during competitions.</p>
+        <!-- REPLACE: link to your real scouting app -->
+        <a class="card-link" href="#" target="_blank" rel="noopener">Open Scouting App ↗</a>
+      </div>
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <h3>Parent Community</h3>
+        <p><!-- REPLACE: e.g. a group chat, Facebook group, or email list --> Lorem ipsum — link to the parent group chat or mailing list goes here.</p>
+        <a class="card-link" href="#" target="_blank" rel="noopener">Join →</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="border-bottom:none;">
+    <div class="section-head"><span class="plate">MEALS</span><h2>Build Season Meal Calendar</h2></div>
+    <p class="section-sub">Click an open day to volunteer to bring food. Click your own day again to edit or cancel it.</p>
+
+    <div class="cal-head">
+      <h2 id="calTitle">Loading…</h2>
+      <div class="cal-nav">
+        <button id="prevMonth">←</button>
+        <button id="nextMonth">→</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </section>
+
+  <footer>
+    <div>FRC Team 3006 — Red Rock Robotics · Salt Lake City, UT</div>
+  </footer>
+</div>
+
+<!-- ================= DAY MODAL ================= -->
+<div class="rr-modal-bg" id="dayModalBg">
+  <div class="rr-modal">
+    <h3 id="dayModalTitle">Bring food on this day</h3>
+    <p class="sub" id="dayModalDate"></p>
+    <div class="field">
+      <label>Parent name</label>
+      <input type="text" id="mParentName">
+    </div>
+    <div class="field">
+      <label>Food description</label>
+      <input type="text" id="mFoodDesc" placeholder="e.g. Pizza from Costco">
+    </div>
+    <div class="field field-check">
+      <input type="checkbox" id="mVegetarian">
+      <label for="mVegetarian" style="margin:0;">Includes a vegetarian option</label>
+    </div>
+    <div class="rr-modal-actions">
+      <button class="btn btn-primary" id="mSaveBtn">Save</button>
+      <button class="btn btn-ghost" id="mDeleteBtn" style="display:none;">Cancel signup</button>
+    </div>
+    <button class="rr-modal-close" id="mCloseBtn">Close</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client-parent.js"></script>
+<script src="js/parents.js"></script>
+<script>
+  const gate = document.getElementById('gate');
+  const page = document.getElementById('parentsPage');
+  const gateError = document.getElementById('gateError');
+  const calGrid = document.getElementById('calGrid');
+  const calTitle = document.getElementById('calTitle');
+
+  // ---- idle auto-logout ----
+  const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes of inactivity
+  let idleTimer = null;
+
+  function resetIdleTimer(){
+    if(page.style.display === 'none') return; // only matters once inside
+    if(idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(autoLogout, IDLE_TIMEOUT_MS);
+  }
+
+  async function autoLogout(){
+    await rrClient.auth.signOut();
+    page.style.display = 'none';
+    gate.style.display = 'flex';
+    document.getElementById('parentCode').value = '';
+    gateError.textContent = 'You were signed out after being inactive.';
+    gateError.classList.add('visible');
+  }
+
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+
+  async function enterPage(){
+    gate.style.display = 'none';
+    page.style.display = 'block';
+    await rrRenderCalendar(calGrid, calTitle);
+    resetIdleTimer();
+  }
+
+  document.getElementById('gateBtn').addEventListener('click', async () => {
+    gateError.classList.remove('visible');
+    const code = document.getElementById('parentCode').value;
+    try {
+      await rrParentGate(code);
+      await enterPage();
+    } catch(err){
+      gateError.textContent = err.message;
+      gateError.classList.add('visible');
+    }
+  });
+
+  document.getElementById('prevMonth').addEventListener('click', async () => {
+    currentMonth.setMonth(currentMonth.getMonth() - 1);
+    await rrRenderCalendar(calGrid, calTitle);
+  });
+  document.getElementById('nextMonth').addEventListener('click', async () => {
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
+    await rrRenderCalendar(calGrid, calTitle);
+  });
+
+  // ---- day modal ----
+  let activeDate = null;
+  let activeSignup = null;
+  const dayModalBg = document.getElementById('dayModalBg');
+
+  window.rrOpenDayModal = function(dateStr, signup){
+    activeDate = dateStr;
+    activeSignup = signup;
+    document.getElementById('dayModalDate').textContent = dateStr;
+    document.getElementById('mParentName').value = signup ? signup.parent_name : "";
+    document.getElementById('mFoodDesc').value = signup ? signup.food_description : "";
+    document.getElementById('mVegetarian').checked = signup ? signup.vegetarian : false;
+    document.getElementById('mDeleteBtn').style.display = signup ? 'inline-flex' : 'none';
+    document.getElementById('dayModalTitle').textContent = signup ? 'Edit your signup' : 'Bring food on this day';
+    dayModalBg.classList.add('open');
+  };
+
+  document.getElementById('mCloseBtn').addEventListener('click', () => dayModalBg.classList.remove('open'));
+
+  document.getElementById('mSaveBtn').addEventListener('click', async () => {
+    const parent_name = document.getElementById('mParentName').value.trim();
+    const food_description = document.getElementById('mFoodDesc').value.trim();
+    const vegetarian = document.getElementById('mVegetarian').checked;
+    if(!parent_name || !food_description){ alert('Please fill in your name and a food description.'); return; }
+
+    let error;
+    if(activeSignup){
+      ({ error } = await rrClient.from('meal_signups')
+        .update({ parent_name, food_description, vegetarian })
+        .eq('id', activeSignup.id));
+    } else {
+      ({ error } = await rrClient.from('meal_signups')
+        .insert({ event_date: activeDate, parent_name, food_description, vegetarian, created_by: myUserId }));
+    }
+    if(error){ alert('Could not save: ' + error.message); return; }
+    dayModalBg.classList.remove('open');
+    await rrRenderCalendar(calGrid, calTitle);
+  });
+
+  document.getElementById('mDeleteBtn').addEventListener('click', async () => {
+    if(!activeSignup) return;
+    if(!confirm('Cancel this signup?')) return;
+    await rrClient.from('meal_signups').delete().eq('id', activeSignup.id);
+    dayModalBg.classList.remove('open');
+    await rrRenderCalendar(calGrid, calTitle);
+  });
+
+  // if already gated this session, skip straight to the page
+  (async () => {
+    if(await rrParentAlreadyGated()) await enterPage();
+  })();
+
+  // Leaving for the main site means "done" for a parent session —
+  // sign out first so coming back to this tab later requires the
+  // code again, instead of silently still being gated.
+  document.getElementById('mainSiteLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if(idleTimer) clearTimeout(idleTimer);
+    await rrClient.auth.signOut();
+    window.location.replace('index.html');
+  });
+</script>
+</body>
+</html>

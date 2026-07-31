@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial — Red Rock Robotics</title>
+<link rel="icon" href="../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="home.html">
+    <img src="../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="home.html">← All Subteams</a>
+  </div>
+</header>
+
+<section class="docs-hero">
+  <div class="crumb" id="crumb">Loading…</div>
+  <h1 id="ttlTitle">Loading…</h1>
+  <p id="ttlSummary"></p>
+</section>
+
+<div class="docs-body" id="body" style="display:none;">
+
+  <div class="docs-block" id="videoBlock" style="display:none;">
+    <span class="db-label">Video</span>
+    <div class="video-frame">
+      <iframe id="ttlVideo" src="" title="Tutorial video" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <div class="docs-block" id="textBlock" style="display:none;">
+    <span class="db-label">Overview</span>
+    <h2>Overview</h2>
+    <div class="prose" id="ttlBody"></div>
+  </div>
+
+  <div class="docs-block" id="codeBlockWrap" style="display:none;">
+    <span class="db-label">Code</span>
+    <h2>Examples</h2>
+    <div id="codeBlocks"></div>
+  </div>
+
+</div>
+
+<footer>
+  <div>FRC Team 3006 — Red Rock Robotics</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/hub-content.js"></script>
+<script>
+  const subteamPage = { software:"software", hardware:"hardware", electrical:"electrical", strategy:"strategy", hpr:"hpr" };
+
+  function ytEmbed(url){
+    if(!url) return "";
+    // accepts either a full watch URL or an already-embed URL
+    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{6,})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : url;
+  }
+
+  (async () => {
+    const profile = await rrRequireSession();
+    if(!profile) return;
+
+    const slug = new URLSearchParams(window.location.search).get("slug");
+    if(!slug){
+      document.getElementById('ttlTitle').textContent = 'No tutorial specified.';
+      return;
+    }
+
+    const { data: t, error } = await rrClient
+      .from("tutorials")
+      .select("*")
+      .eq("slug", slug)
+      .single();
+
+    if(error || !t){
+      document.getElementById('ttlTitle').textContent = 'Tutorial not found.';
+      return;
+    }
+
+    document.title = t.title + " — Red Rock Robotics";
+    document.getElementById('crumb').innerHTML =
+      `<a href="subteams/${t.subteam}.html">${t.subteam[0].toUpperCase()+t.subteam.slice(1)}</a> / ${escapeHtml(t.title)}`;
+    document.getElementById('ttlTitle').textContent = t.title;
+    document.getElementById('ttlSummary').textContent = t.summary || "";
+    document.getElementById('body').style.display = "flex";
+
+    if(t.video_url){
+      document.getElementById('videoBlock').style.display = "flex";
+      document.getElementById('ttlVideo').src = ytEmbed(t.video_url);
+    }
+    if(t.body){
+      document.getElementById('textBlock').style.display = "flex";
+      document.getElementById('ttlBody').innerHTML = t.body.split("\n\n").map(p => `<p>${escapeHtml(p)}</p>`).join("");
+    }
+    if(t.code_blocks && t.code_blocks.length){
+      document.getElementById('codeBlockWrap').style.display = "flex";
+      const wrap = document.getElementById('codeBlocks');
+      t.code_blocks.forEach(cb => {
+        const el = document.createElement('div');
+        el.className = 'code-embed';
+        el.style.marginBottom = '14px';
+        el.innerHTML = `
+          <div class="ce-bar"><span>${escapeHtml(cb.filename || 'snippet')}</span></div>
+          <pre>${escapeHtml(cb.code || '')}</pre>
+        `;
+        wrap.appendChild(el);
+      });
+    }
+  })();
+</script>
+</body>
+</html>

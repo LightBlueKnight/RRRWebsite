@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial Editor — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:800px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2 id="editorHeading">New Tutorial</h2></div>
+  <p class="section-sub">Video, text, and code blocks — same layout members see on the tutorial page.</p>
+
+  <div class="editor-block">
+    <h3>Basics</h3>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="fTitle" placeholder="e.g. Autonomous Basics">
+    </div>
+    <div class="field">
+      <label>URL slug</label>
+      <input type="text" id="fSlug" placeholder="e.g. autonomous-basics">
+    </div>
+    <div class="field">
+      <label>Subteam</label>
+      <select id="fSubteam">
+        <option value="software">Software</option>
+        <option value="hardware">Hardware</option>
+        <option value="electrical">Electrical</option>
+        <option value="strategy">Strategy</option>
+        <option value="hpr">HPR</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>One-line summary (shown on the subteam page card)</label>
+      <input type="text" id="fSummary">
+    </div>
+  </div>
+
+  <div class="editor-block">
+    <h3>Video</h3>
+    <div class="field">
+      <label>YouTube URL</label>
+      <input type="text" id="fVideo" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+  </div>
+
+  <div class="editor-block">
+    <h3>Text</h3>
+    <div class="field">
+      <label>Body (separate paragraphs with a blank line)</label>
+      <textarea id="fBody" rows="8"></textarea>
+    </div>
+  </div>
+
+  <div class="editor-block">
+    <h3>Code blocks</h3>
+    <div id="codeBlocksWrap"></div>
+    <button class="add-block-btn" id="addCodeBlock">+ Add code block</button>
+  </div>
+
+  <div class="editor-block">
+    <div class="field-check">
+      <input type="checkbox" id="fPublished">
+      <label for="fPublished" style="margin:0;">Published (visible to members)</label>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px;">
+    <button class="btn btn-primary" id="saveBtn">Save Tutorial</button>
+    <a class="btn btn-ghost" href="dashboard.html">Cancel</a>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/auth.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const editingId = params.get('id');
+  const wrap = document.getElementById('codeBlocksWrap');
+
+  function addCodeBlockRow(filename = "", language = "", code = ""){
+    const row = document.createElement('div');
+    row.className = 'code-block-row';
+    row.innerHTML = `
+      <div class="cbr-top">
+        <input type="text" class="cb-filename" placeholder="Filename (e.g. Subsystem.java)" value="${escapeAttr(filename)}">
+        <input type="text" class="cb-language" placeholder="Language (e.g. java)" value="${escapeAttr(language)}" style="max-width:140px;">
+        <button class="remove-block" type="button">Remove</button>
+      </div>
+      <textarea class="cb-code" rows="6" placeholder="Paste code here">${escapeHtml(code)}</textarea>
+    `;
+    row.querySelector('.remove-block').addEventListener('click', () => row.remove());
+    wrap.appendChild(row);
+  }
+
+  document.getElementById('addCodeBlock').addEventListener('click', () => addCodeBlockRow());
+
+  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ""; return d.innerHTML; }
+  function escapeAttr(str){ return (str || "").replace(/"/g, "&quot;"); }
+
+  function collectCodeBlocks(){
+    return Array.from(wrap.querySelectorAll('.code-block-row')).map(row => ({
+      filename: row.querySelector('.cb-filename').value.trim(),
+      language: row.querySelector('.cb-language').value.trim(),
+      code: row.querySelector('.cb-code').value,
+    })).filter(cb => cb.code.trim().length > 0);
+  }
+
+  async function loadExisting(){
+    if(!editingId) { addCodeBlockRow(); return; }
+    document.getElementById('editorHeading').textContent = 'Edit Tutorial';
+    const { data: t, error } = await rrClient.from('tutorials').select('*').eq('id', editingId).single();
+    if(error || !t){ alert('Could not load tutorial.'); return; }
+    document.getElementById('fTitle').value = t.title || "";
+    document.getElementById('fSlug').value = t.slug || "";
+    document.getElementById('fSubteam').value = t.subteam || "software";
+    document.getElementById('fSummary').value = t.summary || "";
+    document.getElementById('fVideo').value = t.video_url || "";
+    document.getElementById('fBody').value = t.body || "";
+    document.getElementById('fPublished').checked = !!t.published;
+    if(t.code_blocks && t.code_blocks.length){
+      t.code_blocks.forEach(cb => addCodeBlockRow(cb.filename, cb.language, cb.code));
+    } else {
+      addCodeBlockRow();
+    }
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const payload = {
+      title: document.getElementById('fTitle').value.trim(),
+      slug: document.getElementById('fSlug').value.trim().toLowerCase().replace(/\s+/g, '-'),
+      subteam: document.getElementById('fSubteam').value,
+      summary: document.getElementById('fSummary').value.trim(),
+      video_url: document.getElementById('fVideo').value.trim(),
+      body: document.getElementById('fBody').value,
+      code_blocks: collectCodeBlocks(),
+      published: document.getElementById('fPublished').checked,
+      updated_at: new Date().toISOString(),
+    };
+    if(!payload.title || !payload.slug){ alert('Title and slug are required.'); return; }
+
+    let error;
+    if(editingId){
+      ({ error } = await rrClient.from('tutorials').update(payload).eq('id', editingId));
+    } else {
+      const { data: { user } } = await rrClient.auth.getUser();
+      payload.created_by = user.id;
+      ({ error } = await rrClient.from('tutorials').insert(payload));
+    }
+    if(error){ alert('Could not save: ' + error.message); return; }
+    window.location.href = 'dashboard.html';
+  });
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    await loadExisting();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="../home.html">← Hub</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:1000px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Tutorials</h2></div>
+  <p class="section-sub">All tutorials (with drafts)</p>
+  <a class="btn btn-primary" href="editor.html" style="margin-bottom:18px; display:inline-flex;">+ New Tutorial</a>
+  <table class="admin-table">
+    <thead>
+      <tr><th>Title</th><th>Subteam</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody id="tutorialRows">
+      <tr><td colspan="4" style="color:var(--muted);">Loading…</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="section" style="max-width:1000px; border-top:none;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Doc Links</h2></div>
+  <p class="section-sub">External reference links shown on each subteam page.</p>
+
+  <div class="editor-block">
+    <h3>Add a doc link</h3>
+    <div class="field">
+      <label>Subteam</label>
+      <select id="dlSubteam">
+        <option value="software">Software</option>
+        <option value="hardware">Hardware</option>
+        <option value="electrical">Electrical</option>
+        <option value="strategy">Strategy</option>
+        <option value="hpr">HPR</option>
+      </select>
+    </div>
+    <div class="field"><label>Title</label><input type="text" id="dlTitle"></div>
+    <div class="field"><label>Description</label><input type="text" id="dlDesc"></div>
+    <div class="field"><label>URL</label><input type="text" id="dlUrl" placeholder="https://"></div>
+    <div class="field field-check"><input type="checkbox" id="dlLocked"><label for="dlLocked" style="margin:0;">Members/admins only</label></div>
+    <button class="btn btn-primary" id="dlAddBtn">Add Link</button>
+  </div>
+
+  <table class="admin-table">
+    <thead><tr><th>Title</th><th>Subteam</th><th></th></tr></thead>
+    <tbody id="docRows">
+      <tr><td colspan="3" style="color:var(--muted);">Loading…</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/hub-content.js"></script>
+<script>
+  async function loadTutorials(){
+    const { data, error } = await rrClient
+      .from("tutorials")
+      .select("id, title, subteam, published")
+      .order("created_at", { ascending: false });
+    const body = document.getElementById('tutorialRows');
+    body.innerHTML = "";
+    if(error || !data || data.length === 0){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">No tutorials yet.</td></tr>`;
+      return;
+    }
+    data.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(t.title)}</td>
+        <td>${escapeHtml(t.subteam)}</td>
+        <td><span class="status-pill ${t.published ? 'published' : 'draft'}">${t.published ? 'Published' : 'Draft'}</span></td>
+        <td class="row-actions">
+          <a href="editor.html?id=${t.id}">Edit</a>
+          <button class="danger" data-id="${t.id}">Delete</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button.danger').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete this tutorial? This cannot be undone.')) return;
+        await rrClient.from('tutorials').delete().eq('id', btn.dataset.id);
+        loadTutorials();
+      });
+    });
+  }
+
+  async function loadDocLinks(){
+    const { data, error } = await rrClient
+      .from("doc_links")
+      .select("id, title, subteam")
+      .order("created_at", { ascending: false });
+    const body = document.getElementById('docRows');
+    body.innerHTML = "";
+    if(error || !data || data.length === 0){
+      body.innerHTML = `<tr><td colspan="3" style="color:var(--muted);">No doc links yet.</td></tr>`;
+      return;
+    }
+    data.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(d.title)}</td>
+        <td>${escapeHtml(d.subteam)}</td>
+        <td class="row-actions"><button class="danger" data-id="${d.id}">Delete</button></td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button.danger').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!confirm('Delete this doc link?')) return;
+        await rrClient.from('doc_links').delete().eq('id', btn.dataset.id);
+        loadDocLinks();
+      });
+    });
+  }
+
+  document.getElementById('dlAddBtn').addEventListener('click', async () => {
+    const payload = {
+      subteam: document.getElementById('dlSubteam').value,
+      title: document.getElementById('dlTitle').value.trim(),
+      description: document.getElementById('dlDesc').value.trim(),
+      url: document.getElementById('dlUrl').value.trim(),
+      locked: document.getElementById('dlLocked').checked,
+    };
+    if(!payload.title || !payload.url){ alert('Title and URL are required.'); return; }
+    const { error } = await rrClient.from('doc_links').insert(payload);
+    if(error){ alert('Could not add link: ' + error.message); return; }
+    document.getElementById('dlTitle').value = "";
+    document.getElementById('dlDesc').value = "";
+    document.getElementById('dlUrl').value = "";
+    document.getElementById('dlLocked').checked = false;
+    loadDocLinks();
+  });
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    loadTutorials();
+    loadDocLinks();
+  })();
+</script>
+</body>
+</html>
