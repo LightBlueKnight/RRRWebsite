@@ -1,675 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Red Rock Robotics</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="images/logos/logonobackground.png">
-    <link rel="stylesheet" href="main.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Red Rock Robotics Hub</title>
+<link rel="icon" href="../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a class="nav-logo" onclick="showPage('home')">
-    <img src="images/logos/logowithtext.png" alt="Red Rock Robotics Logo" />
-    <!-- <span>Red Rock Robotics</span> -->
-  </a>
-  <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-controls="nav-menu" aria-expanded="false">
-    <span></span>
-    <span></span>
-    <span></span>
-  </button>
-  <div class="nav-right" id="nav-menu">
-    <a onclick="showPage('home')" id="nav-home" class="active">Home</a>
-    <div class="dropdown">
-      <button type="button" class="dropdown-trigger" id="nav-about">
-        About <span class="dropdown-caret">▾</span>
-      </button>
-      <div class="dropdown-menu">
-        <a onclick="showPage('about-org')">Organization</a>
-        <a onclick="showPage('about-first')">FIRST</a>
-        <a onclick="showPage('student-leaders')">Student Leaders</a>
-        <a onclick="showPage('mentors')">Mentors</a>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <img class="auth-logo" src="../images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+    <div class="num">TEAM 3006</div>
+    <h1 id="formTitle">Sign in</h1>
+    <p class="sub" id="formSub">Team hub</p>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="authForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required>
       </div>
-    </div>
-    <a onclick="showPage('robots')" id="nav-robots">Robots</a>
-    <div class="dropdown">
-      <button type="button" class="dropdown-trigger" id="nav-media">
-        Media <span class="dropdown-caret">▾</span>
-      </button>
-      <div class="dropdown-menu">
-        <a onclick="showPage('media-2026')">2026</a>
-        <a onclick="showPage('media-2025')">2025</a>
-        <a onclick="showPage('media-2024')">2024</a>
-        <a onclick="showPage('media-2023')">2023</a>
-        <a onclick="showPage('media-2022')">2022</a>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
       </div>
-    </div>
-    <a onclick="showPage('sponsors')" id="nav-sponsors">Sponsors</a>
-    <a href="parents.html">Parents</a>
-    <a href="hub/index.html" class="nav-hub-link">Team Hub</a>
-  </div>
-</nav>
-<div class="nav-scrim" id="nav-scrim" aria-hidden="true"></div>
-
-<!-- ===== HOME ===== -->
-<div id="home" class="page active">
-  <section class="hero">
-    <img class="hero-img" src="images/homepage/2026utah.jpg" alt="Red Rock Robotics Team" />
-    <div class="hero-overlay">
-      <p class="hero-eyebrow">Founded 2009 • Salt Lake City, Utah</p>
-      <h1 class="hero-title">RED ROCK<br /><span>ROBOTICS</span></h1>
-      <p class="hero-teams">Teams <span>3006</span> &amp; <span>2726</span></p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" onclick="showPage('about-org')">Learn More</a>
-        <a class="btn btn-ghost" onclick="showPage('sponsors')">Sponsor Us</a>
+      <div class="field" id="codeField" style="display:none;">
+        <label for="code">Code</label>
+        <input type="text" id="code" autocomplete="off">
       </div>
-    </div>
-  </section>
+      <button type="submit" class="btn btn-grad" style="width:100%; justify-content:center;" id="submitBtn">Sign in</button>
+    </form>
 
-  <div class="home-stats">
-    <div class="stat-item">
-      <span class="stat-number">50+</span>
-      <span class="stat-label">Active Students</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-number">7</span>
-      <span class="stat-label">Mentors &amp; Coaches</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-number">2</span>
-      <span class="stat-label">Competing Teams</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-number">18</span>
-      <span class="stat-label">Years of Competition</span>
-    </div>
-  </div>
-
-  <section class="home-intro">
-    <span class="section-label">Who We Are</span>
-    <h2 class="section-title">Built in Utah. Competing Everywhere.</h2>
-    <p class="section-text">Red Rock Robotics fields two FIRST Robotics Competition teams — Team 3006 and Team 2726 — from Salt Lake City, Utah. We believe robotics should be accessible to every student who wants to learn, build, and compete. Our teams design and build robots from scratch each season, competing against thousands of teams worldwide.</p>
-  </section>
-</div>
-
-<!-- ===== ABOUT: ORGANIZATION ===== -->
-<div id="about-org" class="page">
-  <div class="page-hero">
-    <span class="section-label">About Us</span>
-    <h1>Our Organization</h1>
-    <!-- <p>Two teams, one mission — bringing robotics to every student who dares to dream.</p> -->
-  </div>
-  <div class="content-section">
-    <h2>Who We Are</h2>
-    <p>Red Rock Robotics is a FIRST Robotics Competition program based in Salt Lake City, Utah. We operate two competitive FRC teams — Team 3006 and Team 2726 — composed of over 50 active students from across the Salt Lake Valley. Both teams compete under the same program umbrella, sharing resources, mentorship, and a commitment to excellence.</p>
-    <p>Founded on the belief that hands-on engineering experience should be available to all students regardless of background or prior experience, Red Rock Robotics has grown into one of Utah's most active robotics programs. We are supported by a dedicated group of more than 10 mentors and coaches who bring real-world industry expertise to our students every build season.</p>
-
-    <div class="mission-box">
-      <p>"No matter how ridiculous the odds may seem, within us resides the power to overcome these challenges and achieve something beautiful. One day, we'll look back at where we started and be amazed by how far we've come."</p>
-    </div>
-
-    <h2>Team 3006</h2>
-    <p>Team 3006 is our flagship team, with a strong competition history across regional and championship events. Team 3006 has consistently pushed the boundaries of robot design, field strategy, and drive performance. Students on this team take on demanding technical challenges each season, from mechanical design to advanced autonomous programming.</p>
-
-    <h2>Team 2726</h2>
-    <p>Team 2726 was established to expand our program's reach and give more students the opportunity to compete at the FRC level. This team operates with the same high standards as Team 3006 — every student is a valued contributor to robot design, software, strategy, and outreach. Team 2726 has quickly grown into a competitive force in its own right.</p>
-
-    <h2>Our Subteams</h2>
-    <p>Both teams are organized into specialized subteams: <strong>Hardware</strong>, covering mechanical design, fabrication, and assembly; <strong>Software</strong>, responsible for robot programming and autonomous routines; <strong>Strategy</strong>, handling scouting, match planning, and drive coaching; <strong>HPR</strong> (Human &amp; Public Relations), our business subteam managing outreach, sponsorships, branding, and communications; and dedicated <strong>Electrical</strong> and <strong>Safety</strong> roles ensuring our robots are built and operated reliably.</p>
-  </div>
-</div>
-
-<!-- ===== ABOUT: FIRST ===== -->
-<div id="about-first" class="page">
-  <div class="page-hero">
-    <span class="section-label">The Program</span>
-    <h1>What is FIRST?</h1>
-    <!-- <p>For Inspiration and Recognition of Science and Technology — changing the world, one robot at a time.</p> -->
-  </div>
-  <div class="first-content">
-    <h2>The FIRST Acronym</h2>
-    <p>FIRST stands for <em>For Inspiration and Recognition of Science and Technology</em>. Founded in 1989 by inventor Dean Kamen, FIRST is a global nonprofit that builds STEM skills in young people alongside the confidence, knowledge, and life skills to succeed. Today, FIRST reaches over 680,000 youth annually across more than 110 countries.</p>
-    <div class="first-acronym">
-      <div class="first-letter">F</div>
-      <div class="first-word"><strong>For</strong><span>A purpose-driven organization built for the benefit of students</span></div>
-      <div class="first-letter">I</div>
-      <div class="first-word"><strong>Inspiration</strong><span>Inspiring the next generation of engineers, scientists, and innovators</span></div>
-      <div class="first-letter">R</div>
-      <div class="first-word"><strong>Recognition</strong><span>Recognizing and celebrating excellence in science and technology</span></div>
-      <div class="first-letter">S</div>
-      <div class="first-word"><strong>Science</strong><span>Grounding students in real-world scientific thinking and problem-solving</span></div>
-      <div class="first-letter">T</div>
-      <div class="first-word"><strong>Technology</strong><span>Building hands-on experience with cutting-edge technology and engineering</span></div>
-    </div>
-
-    <h2>FIRST Robotics Competition (FRC)</h2>
-    <p>The FIRST Robotics Competition is the premier high school robotics competition in the world. Each January, FIRST reveals a brand-new game challenge. Teams of students, working alongside professional mentors, have just six weeks to design, build, program, and test a robot capable of competing in that year's game. Robots then compete at regional events, and the best teams advance to the annual FIRST Championship.</p>
-    <p>FRC is often described as "the hardest fun you'll ever have." Beyond technical skills — engineering, programming, electronics, and fabrication — students develop leadership, communication, time management, and teamwork throughout every season.</p>
-
-    <h2>Gracious Professionalism®</h2>
-    <p>At the heart of FIRST is a concept called Gracious Professionalism — the idea that you can compete fiercely while treating every person with respect and kindness. FIRST teams are famous for helping other teams, even direct competitors, because the community values learning and sportsmanship. Red Rock Robotics carries this philosophy into everything we do.</p>
-
-    <p>Learn more at <a href="https://www.firstinspires.org" target="_blank" style="color:var(--red);text-decoration:none;">firstinspires.org</a></p>
-  </div>
-</div>
-
-<!-- ===== STUDENT LEADERS ===== -->
-<div id="student-leaders" class="page">
-  <div class="page-hero">
-    <span class="section-label">Our Team</span>
-    <h1>Student Leaders</h1>
-    <!-- <p>The captains who drive our team forward — technically, strategically, and creatively.</p> -->
-  </div>
-  <div class="people-grid">
-    <div class="person-card">
-      <div class="person-abbrev">HW</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Hardware Captain</div><div class="person-name">Eli Wheeler</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">HW</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Hardware Captain</div><div class="person-name">Paige Manning-Duncan</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">SW</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Software Captain</div><div class="person-name">Arin Bhandari</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">SW</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Software Captain</div><div class="person-name">Sonia Power-Patwari</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">STR</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Strategy Captain</div><div class="person-name">Kourtney Jia</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">STR</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Strategy Captain</div><div class="person-name">Andy Zhou</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">HPR</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">HPR Captain</div><div class="person-name">Shaurya Negi</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">HPR</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">HPR Captain</div><div class="person-name">Ethan Kamosi</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">SAF</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Safety Captain</div><div class="person-name">Ceili Shale</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">ELEC</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Electrical Captain</div><div class="person-name">Willow Palmer</div></div>
+    <div class="auth-toggle">
+      <span id="toggleLead">New here?</span> <a id="toggleLink">Create an account</a>
     </div>
   </div>
 </div>
 
-<!-- ===== MENTORS ===== -->
-<div id="mentors" class="page">
-  <div class="page-hero">
-    <span class="section-label">Our Team</span>
-    <h1>Mentors &amp; Coaches</h1>
-    <!-- <p>Industry professionals and educators who give their time to help our students grow.</p> -->
-  </div>
-  <div class="people-grid">
-    <div class="person-card">
-      <div class="person-abbrev">HC</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Head Coach</div><div class="person-name">Alison Bulson</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">C</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Coach</div><div class="person-name">Enrique Arce-Larreta</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">C</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Coach</div><div class="person-name">Trevor Smith</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">M</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Mentor - Hardware</div><div class="person-name">Cameron Wold</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">M</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Mentor - Software</div><div class="person-name"> Jason Don</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">M</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Mentor - Software</div><div class="person-name"> Loren Majersik</div></div>
-    </div>
-    <div class="person-card">
-      <div class="person-abbrev">AM</div>
-      <div class="person-avatar"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="person-info"><div class="person-role">Alumni-Mentor - Software</div><div class="person-name"> Russell Brinton</div></div>
-    </div>
-  </div>  
-</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let mode = "login"; // or "signup"
 
-<!-- ===== ROBOTS ===== -->
-<div id="robots" class="page">
-  <div class="page-hero">
-    <span class="section-label">Competition History</span>
-    <h1>Our Robots</h1>
-    <!-- <p>Every season, a new game. Every season, a new machine. Here's what we've built.</p> -->
-  </div>
-  <div class="robots-team-switch" role="tablist" aria-label="Select team robots">
-    <button class="robots-team-btn active" id="robots-team-3006" onclick="setRobotsTeam('3006')" role="tab" aria-selected="true">Team 3006</button>
-    <button class="robots-team-btn" id="robots-team-2726" onclick="setRobotsTeam('2726')" role="tab" aria-selected="false">Team 2726</button>
-  </div>
+  const formTitle = document.getElementById('formTitle');
+  const formSub = document.getElementById('formSub');
+  const codeField = document.getElementById('codeField');
+  const submitBtn = document.getElementById('submitBtn');
+  const toggleLead = document.getElementById('toggleLead');
+  const toggleLink = document.getElementById('toggleLink');
+  const errBox = document.getElementById('authError');
 
-  <div class="robots-list" id="robots-list-3006">
+  function setMode(next){
+    mode = next;
+    errBox.classList.remove('visible');
+    if(mode === 'signup'){
+      formTitle.textContent = 'Create an account';
+      formSub.textContent = "You'll need an account code to sign up — ask a captain or mentor for one.";
+      codeField.style.display = 'block';
+      document.getElementById('code').required = true;
+      submitBtn.textContent = 'Create account';
+      toggleLead.textContent = 'Already have an account?';
+      toggleLink.textContent = 'Sign in';
+    } else {
+      formTitle.textContent = 'Sign in';
+      formSub.textContent = 'Team hub — members and mentors only.';
+      codeField.style.display = 'none';
+      document.getElementById('code').required = false;
+      submitBtn.textContent = 'Sign in';
+      toggleLead.textContent = 'New here?';
+      toggleLink.textContent = 'Create an account';
+    }
+  }
 
-    <div class="robot-row" onclick="showPage('robot-2026a')">
-      <div class="robot-year-badge">2026</div>
-      <div class="robot-img-area"><img src="images/robots/gustav.jpg" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">REBUILT℠ presented by Haas</div>
-        <div class="robot-name">Gustav</div>
-        <span class="robot-team-badge">Team 3006</span>
-      </div>
-      <div class="robot-arrow">→</div>
-    </div>
+  toggleLink.addEventListener('click', () => setMode(mode === 'login' ? 'signup' : 'login'));
 
-    <div class="robot-row" onclick="showPage('robot-2025')">
-      <div class="robot-year-badge">2025</div>
-      <div class="robot-img-area"><img src="images/robots/bubbles.jpeg" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">REEFSCAPE℠ presented by Haas</div>
-        <div class="robot-name">Bubbles</div>
-        <span class="robot-team-badge">Team 3006</span>
-      </div>
-      <div class="robot-arrow">→</div>
-    </div>
+  document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.classList.remove('visible');
+    submitBtn.disabled = true;
 
-    <div class="robot-row" onclick="showPage('robot-2024')">
-      <div class="robot-year-badge">2024</div>
-      <div class="robot-img-area"><img src="images/robots/hilbert.jpeg" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">CRESCENDO℠ presented by Haas</div>
-        <div class="robot-name">🔥Hilbert🔥</div>
-        <span class="robot-team-badge">Team 3006</span>
-      </div>
-      <div class="robot-arrow">→</div>
-    </div>
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const code = document.getElementById('code').value;
 
-    <div class="robot-row" onclick="showPage('robot-2023')">
-      <div class="robot-year-badge">2023</div>
-      <div class="robot-img-area"><img src="images/robots/grandma_tipsy.png" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">CHARGED UP℠ presented by Haas</div>
-        <div class="robot-name">Grandma Tipsy</div>
-        <span class="robot-team-badge">Team 3006</span>
-      </div>  
-      <div class="robot-arrow">→</div>
-    </div>
+    try {
+      if(mode === 'signup'){
+        await rrSignUp(username, password, code);
+      } else {
+        await rrLogIn(username, password);
+      }
+      window.location.href = 'home.html';
+    } catch(err){
+      errBox.textContent = err.message || 'Something went wrong.';
+      errBox.classList.add('visible');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
 
-    <div class="robot-row" onclick="showPage('robot-2022')">
-      <div class="robot-year-badge">2022</div>
-      <div class="robot-img-area"><img src="images/logos/logo.png" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">RAPID REACT℠ presented by The Boeing Company</div>
-        <div class="robot-name">Walter</div>
-        <span class="robot-team-badge">Team 3006</span>
-      </div>
-      <div class="robot-arrow">→</div>
-    </div>
-
-  </div>
-
-  <div class="robots-list hidden" id="robots-list-2726">
-    <div class="robot-row" onclick="showPage('robot-2026b')">
-      <div class="robot-year-badge">2026</div>
-      <div class="robot-img-area"><img src="images/robots/barb.jpg" alt="" /></div>
-      <div class="robot-info">
-        <div class="robot-game-tag">REBUILT℠ presented by Haas</div>
-        <div class="robot-name">B.A.R.B.</div>
-        <span class="robot-team-badge">Team 2726</span>
-      </div>
-      <div class="robot-arrow">→</div>
-    </div>
-  </div>
-</div>
-
-<!-- Robot Detail: 2026 / 3006 -->
-<div id="robot-2026a" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2026 · REBUILT℠ presented by Haas · Team 3006</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">Gustav</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/robots/gustav.jpg" alt="Gustav in action at Idaho Regional" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-    <h3 class="robot-awards-title">Awards Won</h3>
-    <ul class="robot-awards-list">
-      <li>Industrial Design Award - 2026 Idaho Regional</li>
-      <li>Regional Winners - 2026 Utah Regional</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Robot Detail: 2026 / 2726 -->
-<div id="robot-2026b" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2026 · REBUILT℠ presented by Haas · Team 2726</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">B.A.R.B.</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/robots/barb.jpg" alt="B.A.R.B. on the field" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-  </div>
-</div>
-
-<!-- Robot Detail: 2025 -->
-<div id="robot-2025" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2025 · REEFSCAPE℠ presented by Haas · Team 3006</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">Bubbles</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/robots/bubbles.jpeg" alt="Bubbles during REEFSCAPE" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-    <h3 class="robot-awards-title">Awards Won</h3>
-    <ul class="robot-awards-list">
-      <li>Innovation in Control Award sponsored by nVent - 2025 Utah Regional</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Robot Detail: 2024 -->
-<div id="robot-2024" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2024 · CRESCENDO℠ presented by Haas · Team 3006</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">🔥Hilbert🔥</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/robots/hilbert.jpeg" alt="Hilbert at competition" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-    <h3 class="robot-awards-title">Awards Won</h3>
-    <ul class="robot-awards-list">
-      <li>Regional Winners - 2024 Colorado Regional</li>
-    </ul>
-  </div>
-</div>
-
-<!-- Robot Detail: 2023 -->
-<div id="robot-2023" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2023 · CHARGED UP℠ presented by Haas · Team 3006</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">Grandma Tipsy</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/robots/grandma_tipsy.png" alt="Grandma Tipsy at an event" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-  </div>
-</div>
-
-<!-- Robot Detail: 2022 -->
-<div id="robot-2022" class="page">
-  <div class="robot-detail-back">
-    <button class="back-btn" onclick="showPage('robots')">← Back to Robots</button>
-  </div>
-  <div class="robot-detail-header">
-    <span class="section-label">2022 · RAPID REACT℠ presented by The Boeing Company · Team 3006</span>
-    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:0.06em;">Walter</h2>
-  </div>
-  <div class="robot-detail-img"><img src="images/logos/logo.png" alt="Walter robot photo coming soon" /></div>
-  <div class="robot-detail-body">
-    <p>Coming soon.</p>
-    <h3 class="robot-awards-title">Awards Won</h3>
-    <ul class="robot-awards-list">
-      <li>Team Spirit Award - 2022 Idaho Regional</li>
-    </ul>
-  </div>
-</div>
-
-<!-- ===== MEDIA: 2026 ===== -->
-<div id="media-2026" class="page">
-  <div class="page-hero">
-    <span class="section-label">Gallery</span>
-    <h1>Media · 2026</h1>
-    <p>Behind the build, on the field, and everything in between.</p>
-  </div>
-  <div class="media-years">
-    <div class="media-year-section">
-      <div class="media-grid">
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2025-2026" alt="" /></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== MEDIA: 2025 ===== -->
-<div id="media-2025" class="page">
-  <div class="page-hero">
-    <span class="section-label">Gallery</span>
-    <h1>Media · 2025</h1>
-    <p>Behind the build, on the field, and everything in between.</p>
-  </div>
-  <div class="media-years">
-    <div class="media-year-section">
-      <div class="media-grid">
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2024-2025" alt="" /></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== MEDIA: 2024 ===== -->
-<div id="media-2024" class="page">
-  <div class="page-hero">
-    <span class="section-label">Gallery</span>
-    <h1>Media · 2024</h1>
-    <p>Behind the build, on the field, and everything in between.</p> 
-  </div>
-  <div class="media-years">
-    <div class="media-year-section">
-      <div class="media-grid">
-        <div class="media-item"><img src="images/Media/2023-2024" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2023-2024" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2023-2024" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2023-2024" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2023-2024" alt="" /></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== MEDIA: 2023 ===== -->
-<div id="media-2023" class="page">
-  <div class="page-hero">
-    <span class="section-label">Gallery</span>
-    <h1>Media · 2023</h1>
-    <p>Behind the build, on the field, and everything in between.</p>
-  </div>
-  <div class="media-years">
-    <div class="media-year-section">
-      <div class="media-grid">
-        <div class="media-item"><img src="images/Media/2022-2023" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2022-2023" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2022-2023" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2022-2023" alt="" /></div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== MEDIA: 2022 ===== -->
-<div id="media-2022" class="page">
-  <div class="page-hero">
-    <span class="section-label">Gallery</span>
-    <h1>Media · 2022</h1>
-    <p>Behind the build, on the field, and everything in between.</p>
-  </div>
-  <div class="media-years">
-    <div class="media-year-section">
-      <div class="media-grid">
-        <!-- ===== NOTE: 2021-2022 does not contain any information ===== -->
-        <div class="media-item"><img src="images/Media/2021-2022" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2021-2022" alt="" /></div>
-        <div class="media-item"><img src="images/Media/2021-2022" alt="" /></div>
-      </div>
-    </div>
-  </div>
-</div>  
-
-<!-- ===== SPONSORS ===== -->
-<div id="sponsors" class="page">
-  <div class="page-hero">
-    <span class="section-label">Support Us</span>
-    <h1>Our Sponsors</h1>
-    <p>Our program runs because of the incredible companies and individuals who believe in our students.</p>
-  </div>
-  <div class="sponsors-content">
-
-    <div class="sponsors-tier">
-      <div class="tier-label">Presenting Sponsors</div>
-      <div class="sponsors-row">
-        <a href="https://fiber.google.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Google Fiber website">
-          <img class="presenting-logo" src="images/sponsors/googlefiber.webp" alt="Google Fiber" />
-        </a>
-        <a href="https://www.marathonpetroleum.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Marathon website">
-          <img class="presenting-logo" src="images/sponsors/marathon.png" alt="Marathon" />
-        </a>
-      </div>
-    </div>
-
-    <div class="sponsors-tier">
-      <div class="tier-label">Sponsors</div>
-      <div class="sponsors-row">
-        <a href="https://www.northropgrumman.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Northrop Grumman website">
-          <img class="sponsor-logo-plain" src="images/sponsors/northropgrumman.png" alt="Northrop Grumman" />
-        </a>
-        <a href="https://www.ghaasfoundation.org/" target="_blank" rel="noopener noreferrer" aria-label="Visit Haas website">
-          <img class="sponsor-logo-plain" src="images/sponsors/genehaas.webp" alt="Haas" />
-        </a>
-        <a href="https://www.defense.gov/" target="_blank" rel="noopener noreferrer" aria-label="Visit Department of Defense website">
-          <img class="sponsor-logo-plain" src="images/sponsors/dod.png" alt="Department of Defense" />
-        </a>
-        <a href="https://www.riotinto.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit Rio Tinto website">
-          <img class="sponsor-logo-plain" src="images/sponsors/riotinto.png" alt="Rio Tinto" />
-        </a>
-        <a href="https://stem.utah.gov/" target="_blank" rel="noopener noreferrer" aria-label="Visit Utah STEM Action Center website">
-          <img class="sponsor-logo-plain" src="images/sponsors/stemactioncenter.png" alt="Utah STEM Action Center" />
-        </a>
-        <a href="https://www.tslots.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit TSLOTS website">
-          <img class="sponsor-logo-plain" src="images/sponsors/tslots.png" alt="TSLOTS" />
-        </a>
-        <a href="https://www.saltlakeeducationfoundation.org/" target="_blank" rel="noopener noreferrer" aria-label="Visit SLEF website">
-          <img class="sponsor-logo-plain" src="images/sponsors/slef.png" alt="SLEF" />
-        </a>
-        <a href="https://www.allfilters.com/" target="_blank" rel="noopener noreferrer" aria-label="Visit AllFilters.com website">
-          <img class="sponsor-logo-plain" src="images/sponsors/allfilters.png" alt="AllFilters.com" />
-        </a>
-      </div>
-    </div>
-
-    <div class="sponsor-form-section">
-      <h2>Become a Sponsor</h2>
-      <p>Interested in supporting the next generation of enginleers? Fill out the form below and our team will be in touch.</p>
-      <div id="sponsor-form-wrap">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Company / Organization Name</label>
-            <input type="text" placeholder="Red Rock Robotics" id="s-company" />
-          </div>
-          <div class="form-group">
-            <label>Contact Name</label>
-            <input type="text" placeholder="Your full name" id="s-name" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email Address</label>
-            <input type="email" placeholder="contact@company.com" id="s-email" />
-          </div>
-          <div class="form-group">
-            <label>Phone (optional)</label>
-            <input type="tel" placeholder="(801) 555-3006" id="s-phone" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Message</label>
-          <textarea id="s-message" placeholder="Tell us a little about your organization and how you'd like to support Red Rock Robotics..."></textarea>
-        </div>
-        <button class="btn btn-primary" onclick="submitSponsorForm()" style="margin-top:0.5rem;">Submit Inquiry</button>
-      </div>
-      <div class="form-submitted" id="form-submitted">
-        <p style="font-size:1.1rem;color:var(--white);margin-bottom:0.5rem;">✓ Thank you for reaching out!</p>
-        <p style="color:rgba(255,255,255,0.55);font-size:0.9rem;margin:0;">Our team will be in touch within a few business days.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer class="site-footer">
-  <div class="footer-brand">
-    <span>RED ROCK</span> ROBOTICS &nbsp;·&nbsp;<span>3006</span> &nbsp;·&nbsp; <span>2726</span>
-  </div>
-  <div class="footer-links">
-    <a href="https://www.instagram.com/redrockrobotics/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-      <img src="images/socials/instagram.png" alt="Instagram" />
-    </a>
-    <a href="https://www.youtube.com/@redrockrobotics" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-      <img src="images/socials/youtube.png" alt="YouTube" />
-    </a>
-    <a href="https://github.com/Red-Rock-Robotics-3006" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-      <img src="images/socials/github.png" alt="GitHub" />
-    </a>
-  </div>
-  <div class="footer-meta">Salt Lake City, Utah &nbsp;·&nbsp; FIRST Robotics Competition</div>
-</footer>
-
-<script src="main.js"></script>
+  // if already signed in with a real hub account, skip straight to home
+  (async () => {
+    const profile = await rrGetProfile();
+    if(profile && (profile.role === 'member' || profile.role === 'admin')){
+      window.location.href = 'home.html';
+    }
+  })();
+</script>
 </body>
 </html>
