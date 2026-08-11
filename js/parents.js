@@ -94,8 +94,8 @@ async function rrRenderCalendar(gridEl, headEl) {
       + (dayData.open ? " volunteer-open" : "");
     cell.innerHTML = `
       <div class="cd-num">${day}</div>
-      ${dayData.food ? `<div class="cd-parent">${escHtml(dayData.food.parent_name)}</div>` : ""}
-      ${dayData.events.length ? `<div class="cd-event">${escHtml(dayData.events[0].text)}</div>` : ""}
+      ${dayData.food ? `<div class="cd-parent">${esc(dayData.food.parent_name)}</div>` : ""}
+      ${dayData.events.length ? `<div class="cd-event">${esc(dayData.events[0].text)}</div>` : ""}
       <div class="cd-indicators">
         ${dayData.food ? '<span class="cd-dot food" title="Food signup"></span>' : ""}
         ${dayData.requests.length ? '<span class="cd-dot resource" title="Resource requests"></span>' : ""}
