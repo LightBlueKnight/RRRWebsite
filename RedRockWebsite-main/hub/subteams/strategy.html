@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="../home.html">&larr; All Subteams</a>
+  </div>
+</header>
+
+<section class="subteam-hero">
+  <div class="logo-frame">
+    <img src="../../images/logos/subteam-strategy.png" alt="Strategy subteam logo">
+  </div>
+  <div class="eyebrow">ST · 04</div>
+  <h1>Strategy</h1>
+  <p>Scouting, match planning, and drive coaching — turning data into a game plan.</p>
+</section>
+
+<section class="section">
+  <div class="section-head"><span class="plate">DOCS</span><h2>Tutorials</h2></div>
+  <p class="section-sub">Posted by admins — pulled live from the team database.</p>
+  <select class="category-filter" id="tutorialsFilter" style="display:none;"></select>
+  <div class="card-grid" id="tutorialsGrid">
+    <p style="color:var(--muted); font-size:13px;">Loading…</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><span class="plate">REF</span><h2>Docs &amp; Links</h2></div>
+  <p class="section-sub">Reference links maintained by admins.</p>
+  <div id="docsList">
+    <p style="color:var(--muted); font-size:13px;">Loading…</p>
+  </div>
+</section>
+
+<footer>
+  <div>FRC Team 3006 — Red Rock Robotics</div>
+  <div class="foot-links">
+    <a href="software.html">Software</a>
+    <a href="hardware.html">Hardware</a>
+    <a href="electrical.html">Electrical</a>
+    <a href="strategy.html">Strategy</a>
+    <a href="hpr.html">HPR</a>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/hub-content.js"></script>
+<script src="../../js/categories.js"></script>
+<script>
+  (async () => {
+    const profile = await rrRequireSession({ loginPath: "../index.html" });
+    if(!profile) return;
+    await rrLoadSubteamContent("strategy", {
+      tutorialsEl: document.getElementById("tutorialsGrid"),
+      docsEl: document.getElementById("docsList"),
+      tutorialsFilterEl: document.getElementById("tutorialsFilter"),
+    });
+  })();
+</script>
+</body>
+</html>

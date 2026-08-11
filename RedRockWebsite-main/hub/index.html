@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Red Rock Robotics Hub</title>
+<link rel="icon" href="../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <img class="auth-logo" src="../images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+    <div class="num">TEAM 3006</div>
+    <h1 id="formTitle">Sign in</h1>
+    <p class="sub" id="formSub">Team hub</p>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="authForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+      </div>
+      <div class="field" id="codeField" style="display:none;">
+        <label for="code">Code</label>
+        <input type="text" id="code" autocomplete="off">
+      </div>
+      <button type="submit" class="btn btn-grad" style="width:100%; justify-content:center;" id="submitBtn">Sign in</button>
+    </form>
+
+    <div class="auth-toggle">
+      <span id="toggleLead">New here?</span> <a id="toggleLink">Create an account</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let mode = "login"; // or "signup"
+
+  const formTitle = document.getElementById('formTitle');
+  const formSub = document.getElementById('formSub');
+  const codeField = document.getElementById('codeField');
+  const submitBtn = document.getElementById('submitBtn');
+  const toggleLead = document.getElementById('toggleLead');
+  const toggleLink = document.getElementById('toggleLink');
+  const errBox = document.getElementById('authError');
+
+  function setMode(next){
+    mode = next;
+    errBox.classList.remove('visible');
+    if(mode === 'signup'){
+      formTitle.textContent = 'Create an account';
+      formSub.textContent = "You'll need an account code to sign up — ask a captain or mentor for one.";
+      codeField.style.display = 'block';
+      document.getElementById('code').required = true;
+      submitBtn.textContent = 'Create account';
+      toggleLead.textContent = 'Already have an account?';
+      toggleLink.textContent = 'Sign in';
+    } else {
+      formTitle.textContent = 'Sign in';
+      formSub.textContent = 'Team hub — members and mentors only.';
+      codeField.style.display = 'none';
+      document.getElementById('code').required = false;
+      submitBtn.textContent = 'Sign in';
+      toggleLead.textContent = 'New here?';
+      toggleLink.textContent = 'Create an account';
+    }
+  }
+
+  toggleLink.addEventListener('click', () => setMode(mode === 'login' ? 'signup' : 'login'));
+
+  document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errBox.classList.remove('visible');
+    submitBtn.disabled = true;
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const code = document.getElementById('code').value;
+
+    try {
+      if(mode === 'signup'){
+        await rrSignUp(username, password, code);
+      } else {
+        await rrLogIn(username, password);
+      }
+      window.location.href = 'home.html';
+    } catch(err){
+      errBox.textContent = err.message || 'Something went wrong.';
+      errBox.classList.add('visible');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  // if already signed in with a real hub account, skip straight to home
+  (async () => {
+    const profile = await rrGetProfile();
+    if(profile && (profile.role === 'member' || profile.role === 'admin')){
+      window.location.href = 'home.html';
+    }
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quizzes — Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:900px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Quizzes</h2></div>
+  <p class="section-sub">
+    Embeds a Google Form directly on the subteam page. Responses are collected in Google Forms
+    (check the form's own "Responses" tab) — this site doesn't track completion separately.
+  </p>
+
+  <div class="editor-block">
+    <h3 id="formHeading">New quiz</h3>
+    <div class="field"><label>Title</label><input type="text" id="fTitle"></div>
+    <div class="field"><label>Description</label><input type="text" id="fDesc"></div>
+    <div class="field">
+      <label>Google Form embed URL</label>
+      <input type="text" id="fUrl" placeholder="https://docs.google.com/forms/d/e/.../viewform?embedded=true">
+    </div>
+    <p style="font-size:11.5px; color:var(--muted); margin-top:-6px;">
+      In Google Forms: Send → the <strong>&lt;&gt;</strong> (embed) icon → copy the URL from the
+      <code>src="..."</code> in the code it gives you, not the regular share link.
+    </p>
+    <div class="field">
+      <label>Category</label>
+      <select id="fCategory"></select>
+      <input type="text" id="fCategoryNew" placeholder="New category name" style="display:none; margin-top:8px;">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-primary" id="createBtn">Post Quiz</button>
+      <button class="btn btn-ghost" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+    </div>
+  </div>
+
+  <table class="admin-table">
+    <thead><tr><th>Title</th><th>Category</th><th>Subteam</th><th></th></tr></thead>
+    <tbody id="quizRows">
+      <tr><td colspan="4" style="color:var(--muted);">Loading…</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/categories.js"></script>
+<script src="../../js/ui-modals.js"></script>
+<script>
+
+  let editingId = null;
+  let allQuizzes = [];
+
+  async function refreshCategoryOptions(currentValue){
+    const cats = await rrFetchCategories();
+    rrWireCategorySelect(document.getElementById('fCategory'), document.getElementById('fCategoryNew'), cats, currentValue);
+  }
+
+  function resetForm(){
+    editingId = null;
+    document.getElementById('formHeading').textContent = 'New quiz';
+    document.getElementById('fTitle').value = "";
+    document.getElementById('fDesc').value = "";
+    document.getElementById('fUrl').value = "";
+    document.getElementById('fCategoryNew').value = "";
+    document.getElementById('createBtn').textContent = 'Post Quiz';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    refreshCategoryOptions(null);
+  }
+
+  async function loadQuizzes(){
+    const body = document.getElementById('quizRows');
+    const { data, error } = await rrClient.from('quizzes').select('*').order('created_at', { ascending: false });
+    allQuizzes = (!error && data) ? data : [];
+    body.innerHTML = "";
+    if(allQuizzes.length === 0){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">No quizzes yet.</td></tr>`;
+      return;
+    }
+    allQuizzes.forEach(q => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(q.title)}</td>
+        <td>${escapeHtml(q.category || 'General')}</td>
+        <td>${escapeHtml(q.subteam)}</td>
+        <td class="row-actions">
+          <a href="#" data-edit="${q.id}">Edit</a>
+          <button class="danger" data-id="${q.id}">Delete</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button.danger').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!(await rrConfirm('Delete this quiz?'))) return;
+        await rrClient.from('quizzes').delete().eq('id', btn.dataset.id);
+        loadQuizzes();
+      });
+    });
+    body.querySelectorAll('a[data-edit]').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const q = allQuizzes.find(x => x.id === link.dataset.edit);
+        if(!q) return;
+        editingId = q.id;
+        document.getElementById('formHeading').textContent = 'Edit quiz';
+        document.getElementById('fTitle').value = q.title;
+        document.getElementById('fDesc').value = q.description || '';
+        document.getElementById('fUrl').value = q.embed_url;
+        await refreshCategoryOptions(q.category || 'General');
+        document.getElementById('createBtn').textContent = 'Save Changes';
+        document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+  document.getElementById('createBtn').addEventListener('click', async () => {
+    const payload = {
+      subteam: 'software',
+      title: document.getElementById('fTitle').value.trim(),
+      description: document.getElementById('fDesc').value.trim(),
+      embed_url: document.getElementById('fUrl').value.trim(),
+      category: rrGetCategoryValue(document.getElementById('fCategory'), document.getElementById('fCategoryNew')),
+    };
+    if(!payload.title || !payload.embed_url){ await rrAlert('Title and embed URL are required.'); return; }
+
+    let error;
+    if(editingId){
+      ({ error } = await rrClient.from('quizzes').update(payload).eq('id', editingId));
+    } else {
+      const { data: { user } } = await rrClient.auth.getUser();
+      payload.created_by = user.id;
+      ({ error } = await rrClient.from('quizzes').insert(payload));
+    }
+    if(error){ await rrAlert('Could not save: ' + error.message); return; }
+    resetForm();
+    loadQuizzes();
+  });
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    loadQuizzes();
+    refreshCategoryOptions(null);
+  })();
+</script>
+</body>
+</html>

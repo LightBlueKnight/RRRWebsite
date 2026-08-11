@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Hub — Red Rock Robotics</title>
+<link rel="icon" href="../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="home.html">
+    <img src="../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="../index.html">Main Site</a>
+    <a href="admin/dashboard.html" id="adminLink" style="display:none;">Admin</a>
+  </div>
+  <div class="account-pill" id="accountPill">
+    <span class="dot"></span> <span id="whoami">…</span>
+  </div>
+</header>
+
+<section class="home-hero">
+  <img src="../images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+  <div class="eyebrow">Red Rock Robotics</div>
+  <h1>Subteams</h1>
+  <p>Resources for all subteams should be linked here!</p>
+</section>
+
+<section class="section" style="border:none;">
+  <div class="subteam-grid">
+    <a class="subteam-card" href="subteams/software.html">
+      <span class="sc-glow"></span>
+      <span class="sc-code">SW · 01</span>
+      <h3>Software</h3>
+      <p>Docs, tutorials, and other resources for SW.</p>
+      <span class="sc-arrow">Enter →</span>
+    </a>
+    <a class="subteam-card" href="subteams/hardware.html">
+      <span class="sc-glow"></span>
+      <span class="sc-code">HW · 02</span>
+      <h3>Hardware</h3>
+      <p>Resources for Hardware.</p>
+      <span class="sc-arrow">Enter →</span>
+    </a>
+    <a class="subteam-card" href="subteams/electrical.html">
+      <span class="sc-glow"></span>
+      <span class="sc-code">EL · 03</span>
+      <h3>Electrical</h3>
+      <p>Resources for Electrical.</p>
+      <span class="sc-arrow">Enter →</span>
+    </a>
+    <a class="subteam-card" href="subteams/strategy.html">
+      <span class="sc-glow"></span>
+      <span class="sc-code">ST · 04</span>
+      <h3>Strategy</h3>
+      <p>Scouting app, game manual, match strategy.</p>
+      <span class="sc-arrow">Enter →</span>
+    </a>
+    <a class="subteam-card" href="subteams/hpr.html">
+      <span class="sc-glow"></span>
+      <span class="sc-code">HPR · 05</span>
+      <h3>HPR</h3>
+      <p>HPR's cool money stuffs</p>
+      <span class="sc-arrow">Enter →</span>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div>FRC Team 3006 — Red Rock Robotics · Salt Lake City, UT</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/ui-modals.js"></script>
+<script>
+  (async () => {
+    const profile = await rrRequireSession();
+    if(!profile) return;
+    document.getElementById('whoami').textContent = profile.username + ' · ' + profile.role;
+    if(profile.role === 'admin'){
+      document.getElementById('adminLink').style.display = 'inline-block';
+    }
+  })();
+
+  document.getElementById('accountPill').addEventListener('click', async () => {
+    if((await rrConfirm('Sign out?'))){
+      await rrLogOut('index.html');
+    }
+  });
+</script>
+</body>
+</html>

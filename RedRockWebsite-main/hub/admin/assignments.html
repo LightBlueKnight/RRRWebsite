@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignments — Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:900px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Assignments</h2></div>
+  <p class="section-sub">Currently posted under the Software subteam page.</p>
+
+  <div class="editor-block">
+    <h3 id="formHeading">New assignment</h3>
+    <div class="field"><label>Title</label><input type="text" id="fTitle"></div>
+    <div class="field"><label>Description</label><textarea id="fDesc" rows="3"></textarea></div>
+    <div class="field"><label>Due date (optional)</label><input type="date" id="fDue"></div>
+    <div class="field">
+      <label>Category</label>
+      <select id="fCategory"></select>
+      <input type="text" id="fCategoryNew" placeholder="New category name" style="display:none; margin-top:8px;">
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-primary" id="createBtn">Post Assignment</button>
+      <button class="btn btn-ghost" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+    </div>
+  </div>
+
+  <div id="assignmentsList"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/ui-modals.js"></script>
+<script src="../../js/categories.js"></script>
+<script>
+
+  async function loadAssignments(){
+    const listEl = document.getElementById('assignmentsList');
+    const { data: assignments, error } = await rrClient
+      .from('assignments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(error || !assignments || assignments.length === 0){
+      listEl.innerHTML = `<p style="color:var(--muted); font-size:13px; margin-top:20px;">No assignments posted yet.</p>`;
+      return;
+    }
+
+    listEl.innerHTML = "";
+    for(const a of assignments){
+      const block = document.createElement('div');
+      block.className = 'editor-block';
+      block.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+          <div>
+            <h3 style="margin-bottom:4px;">${escapeHtml(a.title)}</h3>
+            <p style="color:var(--muted); font-size:12.5px; margin:0 0 4px;">${escapeHtml(a.description || '')}</p>
+            ${a.due_date ? `<p style="font-family:var(--mono); font-size:11px; color:var(--muted); margin:0;">Due ${escapeHtml(a.due_date)}</p>` : ''}
+            <span class="status-pill draft" style="margin-top:4px; display:inline-block;">${escapeHtml(a.category || 'General')}</span>
+          </div>
+          <button class="danger" data-id="${a.id}" style="font-size:12px; font-weight:600; color:#ff6a5c; background:none; border:none; cursor:pointer;">Delete</button>
+          <button data-edit="${a.id}" style="font-size:12px; font-weight:600; color:var(--light); background:none; border:none; cursor:pointer; margin-right:10px;">Edit</button>
+        </div>
+        <table class="admin-table" style="margin-top:14px;">
+          <thead><tr><th>Member</th><th>File</th><th>Submitted</th><th></th></tr></thead>
+          <tbody id="subs-${a.id}"><tr><td colspan="4" style="color:var(--muted);">Loading…</td></tr></tbody>
+        </table>
+      `;
+      listEl.appendChild(block);
+
+      block.querySelector('button.danger').addEventListener('click', async () => {
+        if(!(await rrConfirm('Delete this assignment and all its submissions?'))) return;
+        await rrClient.from('assignments').delete().eq('id', a.id);
+        loadAssignments();
+      });
+      block.querySelector('button[data-edit]').addEventListener('click', async () => {
+        editingId = a.id;
+        document.getElementById('formHeading').textContent = 'Edit assignment';
+        document.getElementById('fTitle').value = a.title;
+        document.getElementById('fDesc').value = a.description || '';
+        document.getElementById('fDue').value = a.due_date || '';
+        await refreshCategoryOptions(a.category || 'General');
+        document.getElementById('createBtn').textContent = 'Save Changes';
+        document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      loadSubmissions(a.id);
+    }
+  }
+
+  async function loadSubmissions(assignmentId){
+    const body = document.getElementById(`subs-${assignmentId}`);
+    const { data, error } = await rrClient
+      .from('assignment_submissions')
+      .select('id, file_path, file_name, submitted_at, member_id, profiles!member_id(username)')
+      .eq('assignment_id', assignmentId)
+      .order('submitted_at', { ascending: false });
+
+    if(error || !data || data.length === 0){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">No submissions yet.</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = "";
+    data.forEach(s => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(s.profiles ? s.profiles.username : '(unknown)')}</td>
+        <td>${escapeHtml(s.file_name)}</td>
+        <td style="color:var(--muted); font-size:12px;">${new Date(s.submitted_at).toLocaleString()}</td>
+        <td class="row-actions"><a href="#" data-path="${escapeHtml(s.file_path)}">Download</a></td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('a[data-path]').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const { data: signed, error: sErr } = await rrClient.storage
+          .from('assignment-submissions')
+          .createSignedUrl(link.dataset.path, 60);
+        if(sErr || !signed){ await rrAlert('Could not generate a download link.'); return; }
+        window.open(signed.signedUrl, '_blank');
+      });
+    });
+  }
+
+  let editingId = null;
+  let categoryList = [];
+
+  async function refreshCategoryOptions(currentValue){
+    categoryList = await rrFetchCategories();
+    rrWireCategorySelect(document.getElementById('fCategory'), document.getElementById('fCategoryNew'), categoryList, currentValue);
+  }
+
+  function resetForm(){
+    editingId = null;
+    document.getElementById('formHeading').textContent = 'New assignment';
+    document.getElementById('fTitle').value = "";
+    document.getElementById('fDesc').value = "";
+    document.getElementById('fDue').value = "";
+    document.getElementById('fCategoryNew').value = "";
+    document.getElementById('createBtn').textContent = 'Post Assignment';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    refreshCategoryOptions(null);
+  }
+
+  document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+  document.getElementById('createBtn').addEventListener('click', async () => {
+    const payload = {
+      subteam: 'software',
+      title: document.getElementById('fTitle').value.trim(),
+      description: document.getElementById('fDesc').value.trim(),
+      due_date: document.getElementById('fDue').value || null,
+      category: rrGetCategoryValue(document.getElementById('fCategory'), document.getElementById('fCategoryNew')),
+    };
+    if(!payload.title){ await rrAlert('Title is required.'); return; }
+
+    let error;
+    if(editingId){
+      ({ error } = await rrClient.from('assignments').update(payload).eq('id', editingId));
+    } else {
+      const { data: { user } } = await rrClient.auth.getUser();
+      payload.created_by = user.id;
+      ({ error } = await rrClient.from('assignments').insert(payload));
+    }
+    if(error){ await rrAlert('Could not save: ' + error.message); return; }
+    resetForm();
+    loadAssignments();
+  });
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    loadAssignments();
+    refreshCategoryOptions(null);
+  })();
+</script>
+</body>
+</html>

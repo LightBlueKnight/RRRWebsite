@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="../home.html">← Hub</a>
+  </div>
+</header>
+
+<section class="home-hero" style="padding-top:50px;">
+  <div class="eyebrow">Admin</div>
+  <h1>What do you want to manage?</h1>
+  <p>Everything here is admin-only — members and parents never see this screen.</p>
+</section>
+
+<section class="section" style="border:none;">
+  <div class="subteam-grid">
+    <a class="subteam-card" href="tutorials.html">
+      <span class="sc-glow"></span>
+      <img class="admin-hub-icon" src="../../images/icons/icon-tutorials.png" alt="">
+      <h3>Tutorials &amp; Docs</h3>
+      <p>Publish tutorials, manage doc links, search everything.</p>
+      <span class="sc-arrow">Open →</span>
+    </a>
+    <a class="subteam-card" href="assignments.html">
+      <span class="sc-glow"></span>
+      <img class="admin-hub-icon" src="../../images/icons/icon-assignments.png" alt="">
+      <h3>Assignments</h3>
+      <p>Post assignments and review member submissions.</p>
+      <span class="sc-arrow">Open →</span>
+    </a>
+    <a class="subteam-card" href="quizzes.html">
+      <span class="sc-glow"></span>
+      <img class="admin-hub-icon" src="../../images/icons/icon-quizzes.png" alt="">
+      <h3>Quizzes</h3>
+      <p>Embed a Google Form as a quiz for a subteam.</p>
+      <span class="sc-arrow">Open →</span>
+    </a>
+    <a class="subteam-card" href="parents.html">
+      <span class="sc-glow"></span>
+      <img class="admin-hub-icon" src="../../images/icons/icon-parents.png" alt="">
+      <h3>Parents &amp; Calendar</h3>
+      <p>Manage meal signups and post resource requests by day.</p>
+      <span class="sc-arrow">Open →</span>
+    </a>
+    <a class="subteam-card" href="accounts.html">
+      <span class="sc-glow"></span>
+      <img class="admin-hub-icon" src="../../images/icons/icon-accounts.png" alt="">
+      <h3>Accounts</h3>
+      <p>View every account and remove one if needed.</p>
+      <span class="sc-arrow">Open →</span>
+    </a>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/auth.js"></script>
+<script>
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+  })();
+</script>
+</body>
+</html>
