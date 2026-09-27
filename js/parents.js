@@ -18,31 +18,14 @@ window.addEventListener("pageshow", (event) => {
 
 /** Gate: get or start an anonymous session tagged role='parent'. */
 async function rrParentGate(code) {
-  const cleanedCode = String(code || '').trim();
-  if (!cleanedCode) throw new Error("Enter the parent code.");
-
-  // Validate before creating the anonymous session. Anonymous users are
-  // persistent Auth rows, so invalid attempts should not create junk users.
-  const { data: matchedRole, error: codeErr } = await rrClient.rpc("validate_signup_code", { p_code: cleanedCode });
-  if (codeErr || matchedRole !== "parent") throw new Error("That code isn't valid.");
-
   let { data: { user } } = await rrClient.auth.getUser();
-  if (user && !user.is_anonymous) {
-    await rrClient.auth.signOut({ scope: "local" });
-    user = null;
-  }
   if (!user) {
     const { data, error } = await rrClient.auth.signInAnonymously();
     if (error) throw new Error("Could not start a session. Try again.");
     user = data.user;
   }
-  if (!user?.is_anonymous) throw new Error("A parent session could not be started. Please try again.");
-
-  const { error: grantErr } = await rrClient.rpc("grant_parent_access", { p_code: cleanedCode });
-  if (grantErr) {
-    await rrClient.auth.signOut({ scope: "local" });
-    throw new Error("That code isn't valid.");
-  }
+  const { error: grantErr } = await rrClient.rpc("grant_parent_access", { p_code: code });
+  if (grantErr) throw new Error("That code isn't valid.");
   myUserId = user.id;
   return true;
 }
@@ -57,13 +40,8 @@ async function rrParentAlreadyGated() {
     .eq("id", user.id)
     .single();
   if (error || !data) return false;
-  const allowed = data.role === "parent" || data.role === "admin";
-  if (!allowed) return false;
-  // Parent access is anonymous; admins may also use the parent calendar
-  // without entering the parent code.
-  if (data.role === "parent" && !user.is_anonymous) return false;
   myUserId = user.id;
-  return true;
+  return data.role === "parent" || data.role === "admin";
 }
 
 
