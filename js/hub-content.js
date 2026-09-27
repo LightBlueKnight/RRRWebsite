@@ -4,11 +4,11 @@
    and renders them into the page. Used by all 5 subteam pages.
    ============================================================ */
 
-async function rrLoadSubteamContent(subteam, { tutorialsEl, docsEl }) {
+async function rrLoadSubteamContent(subteam, { tutorialsEl, docsEl, tutorialsFilterEl }) {
   const [{ data: tutorials, error: tErr }, { data: docs, error: dErr }] = await Promise.all([
     rrClient
       .from("tutorials")
-      .select("slug, title, summary")
+      .select("slug, title, summary, category")
       .eq("subteam", subteam)
       .eq("published", true)
       .order("created_at", { ascending: false }),
@@ -19,24 +19,38 @@ async function rrLoadSubteamContent(subteam, { tutorialsEl, docsEl }) {
       .order("created_at", { ascending: false }),
   ]);
 
-  if (tutorialsEl) {
+  function renderTutorials(list){
     tutorialsEl.innerHTML = "";
+    if (!list || list.length === 0) {
+      tutorialsEl.innerHTML = `<p style="color:var(--muted); font-size:13px;">No tutorials in this category.</p>`;
+      return;
+    }
+    list.forEach((t) => {
+      const card = document.createElement("a");
+      card.className = "card";
+      card.style.textDecoration = "none";
+      card.href = `../tutorial.html?slug=${encodeURIComponent(t.slug)}`;
+      card.innerHTML = `
+        <div class="card-icon">＋</div>
+        <h3>${escapeHtml(t.title)}</h3>
+        <p>${escapeHtml(t.summary || "")}</p>
+        <span class="card-link">Open tutorial →</span>
+      `;
+      tutorialsEl.appendChild(card);
+    });
+  }
+
+  if (tutorialsEl) {
     if (tErr || !tutorials || tutorials.length === 0) {
       tutorialsEl.innerHTML = `<p style="color:var(--muted); font-size:13px;">No tutorials posted yet.</p>`;
+      if (tutorialsFilterEl) tutorialsFilterEl.style.display = "none";
     } else {
-      tutorials.forEach((t) => {
-        const card = document.createElement("a");
-        card.className = "card";
-        card.style.textDecoration = "none";
-        card.href = `../tutorial.html?slug=${encodeURIComponent(t.slug)}`;
-        card.innerHTML = `
-          <div class="card-icon">＋</div>
-          <h3>${escapeHtml(t.title)}</h3>
-          <p>${escapeHtml(t.summary || "")}</p>
-          <span class="card-link">Open tutorial →</span>
-        `;
-        tutorialsEl.appendChild(card);
-      });
+      if (tutorialsFilterEl) {
+        rrWireCategoryFilter(tutorialsFilterEl, tutorials, (category) => {
+          renderTutorials(category ? tutorials.filter(t => t.category === category) : tutorials);
+        });
+      }
+      renderTutorials(tutorials);
     }
   }
 
@@ -61,11 +75,3 @@ async function rrLoadSubteamContent(subteam, { tutorialsEl, docsEl }) {
   }
 }
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str || "";
-  return div.innerHTML;
-}
-function escapeAttr(str) {
-  return (str || "").replace(/"/g, "&quot;");
-}

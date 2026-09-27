@@ -24,7 +24,7 @@
 
 <section class="subteam-hero">
   <div class="logo-frame">
-    <img src="../../images/logos/subteam-software.png" alt="Software subteam logo">
+    <img loading="lazy" decoding="async" src="../../images/logos/subteam-software.png" alt="Software subteam logo">
   </div>
   <div class="eyebrow">SW · 01</div>
   <h1>Software</h1>
@@ -34,6 +34,7 @@
 <section class="section">
   <div class="section-head"><span class="plate">DOCS</span><h2>Tutorials</h2></div>
   <p class="section-sub">Posted by admins — pulled live from the team database.</p>
+  <select class="category-filter" id="tutorialsFilter" style="display:none;"></select>
   <div class="card-grid" id="tutorialsGrid">
     <p style="color:var(--muted); font-size:13px;">Loading…</p>
   </div>
@@ -43,6 +44,24 @@
   <div class="section-head"><span class="plate">REF</span><h2>Docs &amp; Links</h2></div>
   <p class="section-sub">Reference links maintained by admins.</p>
   <div id="docsList">
+    <p style="color:var(--muted); font-size:13px;">Loading…</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><span class="plate">HW</span><h2>Assignments</h2></div>
+  <p class="section-sub">Submit your work — Word docs, Java files, or anything else the assignment calls for.</p>
+  <select class="category-filter" id="assignmentsFilter" style="display:none;"></select>
+  <div class="card-grid" id="assignmentsGrid">
+    <p style="color:var(--muted); font-size:13px;">Loading…</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head"><span class="plate">QZ</span><h2>Quizzes</h2></div>
+  <p class="section-sub">Complete the form below — responses go straight to the team's Google account.</p>
+  <select class="category-filter" id="quizzesFilter" style="display:none;"></select>
+  <div id="quizzesList">
     <p style="color:var(--muted); font-size:13px;">Loading…</p>
   </div>
 </section>
@@ -58,11 +77,15 @@
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="../../js/supabase-config.js"></script>
 <script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
 <script src="../../js/auth.js"></script>
 <script src="../../js/hub-content.js"></script>
+<script src="../../js/categories.js"></script>
+<script src="../../js/assignments.js"></script>
+<script src="../../js/quizzes.js"></script>
 <script>
   (async () => {
     const profile = await rrRequireSession({ loginPath: "../index.html" });
@@ -70,7 +93,10 @@
     await rrLoadSubteamContent("software", {
       tutorialsEl: document.getElementById("tutorialsGrid"),
       docsEl: document.getElementById("docsList"),
+      tutorialsFilterEl: document.getElementById("tutorialsFilter"),
     });
+    await rrLoadAssignments("software", document.getElementById("assignmentsGrid"), document.getElementById("assignmentsFilter"));
+    await rrLoadQuizzes("software", document.getElementById("quizzesList"), document.getElementById("quizzesFilter"));
   })();
 </script>
 </body>

@@ -29,6 +29,13 @@ build step) — Supabase provides the backend.
 6. **Authentication → Providers → Anonymous sign-ins**: turn this **on**
    — it's what lets parents access the calendar with just a code,
    no account.
+7. **If you already had the database set up from an earlier version:**
+   run the migration files you are missing in order. A database that
+   already has Assignments, Quizzes, parent calendar resource requests,
+   and categories needs migrations 2–5 in order, followed by
+   `schema-migration-6.sql`. A much older database may need migrations
+   2–6 in order. A fresh install can use `schema.sql`
+   by itself; it now includes the announcement system as well.
 
 ## 3. Connect the site to your project
 
@@ -68,13 +75,34 @@ build settings needed.
 - `hub/index.html` — sign in / sign up (username + password, code
   required to sign up)
 - `hub/home.html` — subteam links (only reachable once signed in)
-- `hub/subteams/*.html` — pulls that subteam's tutorials + doc links
-  live from the database
+- `hub/subteams/*.html` — pulls that subteam's tutorials, doc links,
+  assignments, and quizzes live from the database (assignments and
+  quizzes currently only shown on the Software page)
 - `hub/tutorial.html?slug=...` — renders one tutorial (video + text +
   code blocks)
-- `hub/admin/dashboard.html` — admin-only: list/delete tutorials and
-  doc links
+- `hub/admin/dashboard.html` — admin home: icon links out to every
+  admin tool below
+- `hub/admin/tutorials.html` — admin-only: search, publish, edit,
+  delete tutorials and doc links
 - `hub/admin/editor.html` — admin-only: create/edit a tutorial
-- `parents.html` — parent-code gate, scouting/community links, and
-  the meal-volunteer calendar
-- `schema.sql` — the whole database structure and security rules
+- `hub/admin/assignments.html` — admin-only: post assignments, review
+  and download member submissions
+- `hub/admin/quizzes.html` — admin-only: embed a Google Form as a quiz
+- `hub/admin/parents.html` — admin-only: day-by-day calendar — delete
+  food signups, add/delete resource requests, see who volunteered
+- `hub/admin/accounts.html` — admin-only: view and delete accounts
+- `parents.html` — parent-code gate, latest announcements, and the meal +
+  resource-request calendar (parents can also volunteer for team resource
+  requests, not just bring food)
+- `announcement-catalog.html` — parent-code-gated full announcement catalog
+- `hub/admin/announcements.html` — admin-only announcement editor/catalog
+  with publishing, inline pictures, downloadable files, editing, and delete
+- `schema.sql` — the full current database structure and security
+  rules (use this for a brand-new Supabase project)
+- `schema-migration-2.sql` — only the newest additions (Assignments,
+  Quizzes, resource requests, account deletion) — use this instead
+  if your database already existed before this update
+
+### Announcement system
+
+Run `schema-migration-5.sql` once after migrations 1–4 to add announcements. Then run `schema-migration-6.sql` to apply the current security/RLS/storage hardening and account/file cleanup fixes.

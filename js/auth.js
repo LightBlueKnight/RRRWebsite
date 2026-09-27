@@ -6,6 +6,13 @@
 
 /** Sign up a brand-new username/password/code account. */
 async function rrSignUp(username, password, code) {
+  // Do not let a temporary parent session become entangled with a new
+  // permanent team account in the same browser.
+  const { data: { session: existingSession } } = await rrClient.auth.getSession();
+  if (existingSession?.user?.is_anonymous) {
+    await rrClient.auth.signOut({ scope: "local" });
+  }
+
   // 1. Check the code BEFORE creating any account, so a wrong code
   //    never leaves behind a junk auth user.
   const { error: codeErr } = await rrClient.rpc("validate_signup_code", { p_code: code });
@@ -70,10 +77,11 @@ async function rrGetProfile() {
 async function rrRequireSession({ requireAdmin = false, loginPath = "index.html" } = {}) {
   const profile = await rrGetProfile();
 
-  // Only real hub accounts (member/admin) belong here. A 'parent'
-  // session (or anything else) should never grant access — sign it
-  // out so a stray/old session doesn't keep coming back.
-  const validRole = profile && (profile.role === "member" || profile.role === "admin");
+  // Only permanent hub accounts (member/admin) belong here. Anonymous
+  // Supabase users must never be treated as signed-in team members.
+  const { data: { session } } = await rrClient.auth.getSession();
+  const isAnonymous = !!session?.user?.is_anonymous;
+  const validRole = !isAnonymous && profile && (profile.role === "member" || profile.role === "admin");
   if (!validRole) {
     if (profile) await rrClient.auth.signOut({ scope: "global" });
     window.location.replace(loginPath);

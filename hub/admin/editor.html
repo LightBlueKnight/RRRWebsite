@@ -18,7 +18,7 @@
     </div>
   </a>
   <div class="topnav-links">
-    <a href="dashboard.html">← Admin</a>
+    <a href="tutorials.html">← Tutorials & Docs</a>
   </div>
 </header>
 
@@ -49,6 +49,11 @@
     <div class="field">
       <label>One-line summary (shown on the subteam page card)</label>
       <input type="text" id="fSummary">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="fCategory"></select>
+      <input type="text" id="fCategoryNew" placeholder="New category name" style="display:none; margin-top:8px;">
     </div>
   </div>
 
@@ -83,14 +88,17 @@
 
   <div style="display:flex; gap:12px;">
     <button class="btn btn-primary" id="saveBtn">Save Tutorial</button>
-    <a class="btn btn-ghost" href="dashboard.html">Cancel</a>
+    <a class="btn btn-ghost" href="tutorials.html">Cancel</a>
   </div>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="../../js/supabase-config.js"></script>
 <script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
 <script src="../../js/auth.js"></script>
+<script src="../../js/categories.js"></script>
+<script src="../../js/ui-modals.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const editingId = params.get('id');
@@ -113,7 +121,6 @@
 
   document.getElementById('addCodeBlock').addEventListener('click', () => addCodeBlockRow());
 
-  function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ""; return d.innerHTML; }
   function escapeAttr(str){ return (str || "").replace(/"/g, "&quot;"); }
 
   function collectCodeBlocks(){
@@ -125,10 +132,10 @@
   }
 
   async function loadExisting(){
-    if(!editingId) { addCodeBlockRow(); return; }
+    if(!editingId) { addCodeBlockRow(); await refreshCategoryOptions(null); return; }
     document.getElementById('editorHeading').textContent = 'Edit Tutorial';
     const { data: t, error } = await rrClient.from('tutorials').select('*').eq('id', editingId).single();
-    if(error || !t){ alert('Could not load tutorial.'); return; }
+    if(error || !t){ await rrAlert('Could not load tutorial.'); return; }
     document.getElementById('fTitle').value = t.title || "";
     document.getElementById('fSlug').value = t.slug || "";
     document.getElementById('fSubteam').value = t.subteam || "software";
@@ -136,11 +143,17 @@
     document.getElementById('fVideo').value = t.video_url || "";
     document.getElementById('fBody').value = t.body || "";
     document.getElementById('fPublished').checked = !!t.published;
+    await refreshCategoryOptions(t.category || "General");
     if(t.code_blocks && t.code_blocks.length){
       t.code_blocks.forEach(cb => addCodeBlockRow(cb.filename, cb.language, cb.code));
     } else {
       addCodeBlockRow();
     }
+  }
+
+  async function refreshCategoryOptions(currentValue){
+    const cats = await rrFetchCategories();
+    rrWireCategorySelect(document.getElementById('fCategory'), document.getElementById('fCategoryNew'), cats, currentValue);
   }
 
   document.getElementById('saveBtn').addEventListener('click', async () => {
@@ -153,9 +166,10 @@
       body: document.getElementById('fBody').value,
       code_blocks: collectCodeBlocks(),
       published: document.getElementById('fPublished').checked,
+      category: rrGetCategoryValue(document.getElementById('fCategory'), document.getElementById('fCategoryNew')),
       updated_at: new Date().toISOString(),
     };
-    if(!payload.title || !payload.slug){ alert('Title and slug are required.'); return; }
+    if(!payload.title || !payload.slug){ await rrAlert('Title and slug are required.'); return; }
 
     let error;
     if(editingId){
@@ -165,8 +179,8 @@
       payload.created_by = user.id;
       ({ error } = await rrClient.from('tutorials').insert(payload));
     }
-    if(error){ alert('Could not save: ' + error.message); return; }
-    window.location.href = 'dashboard.html';
+    if(error){ await rrAlert('Could not save: ' + error.message); return; }
+    window.location.href = 'tutorials.html';
   });
 
   (async () => {

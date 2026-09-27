@@ -11,7 +11,7 @@
 
 <header class="topnav">
   <a class="brand" href="home.html">
-    <img src="../images/logos/logonobackground.png" alt="">
+    <img loading="lazy" decoding="async" src="../images/logos/logonobackground.png" alt="">
     <div class="brand-text">
       <div class="num">TEAM 3006</div>
       <div class="name">Red Rock Robotics</div>
@@ -27,7 +27,7 @@
 </header>
 
 <section class="home-hero">
-  <img src="../images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+  <img loading="lazy" decoding="async" src="../images/logos/logonobackground.png" alt="Red Rock Robotics logo">
   <div class="eyebrow">Red Rock Robotics</div>
   <h1>Subteams</h1>
   <p>Resources for all subteams should be linked here!</p>
@@ -77,10 +77,11 @@
   <div>FRC Team 3006 — Red Rock Robotics · Salt Lake City, UT</div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 <script src="../js/supabase-config.js"></script>
 <script src="../js/supabase-client.js"></script>
 <script src="../js/auth.js"></script>
+<script src="../js/ui-modals.js"></script>
 <script>
   (async () => {
     const profile = await rrRequireSession();
@@ -92,7 +93,7 @@
   })();
 
   document.getElementById('accountPill').addEventListener('click', async () => {
-    if(confirm('Sign out?')){
+    if((await rrConfirm('Sign out?'))){
       await rrLogOut('index.html');
     }
   });

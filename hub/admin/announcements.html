@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements — Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:900px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Announcements</h2></div>
+  <p class="section-sub">Post updates for parents. Announcements can contain formatted text, inline pictures, and downloadable files.</p>
+
+  <div class="editor-block announcement-editor-block">
+    <h3 id="formHeading">New announcement</h3>
+
+    <div class="field">
+      <label for="fTitle">Title</label>
+      <input type="text" id="fTitle" placeholder="e.g. October parent meeting">
+    </div>
+
+    <div class="field">
+      <label>Announcement</label>
+      <div class="rich-toolbar" id="richToolbar">
+        <button type="button" data-command="bold" title="Bold"><strong>B</strong></button>
+        <button type="button" data-command="italic" title="Italic"><em>I</em></button>
+        <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+        <button type="button" data-command="insertUnorderedList" title="Bulleted list">• List</button>
+        <button type="button" data-command="insertOrderedList" title="Numbered list">1. List</button>
+        <button type="button" data-format="h2" title="Heading">H</button>
+        <button type="button" id="insertLinkBtn" title="Insert link">Link</button>
+        <button type="button" id="insertImageBtn" title="Insert picture">Picture</button>
+        <button type="button" id="attachFileBtn" title="Attach file">File</button>
+      </div>
+      <div id="fBody" class="rich-editor" contenteditable="true" spellcheck="true" data-placeholder="Write the announcement here…"></div>
+      <input type="file" id="imageInput" accept="image/*" multiple hidden>
+      <input type="file" id="fileInput" multiple hidden>
+    </div>
+
+    <div class="field-check announcement-publish-field">
+      <input type="checkbox" id="fPublished" checked>
+      <label for="fPublished" style="margin:0;">Publish immediately so parents can see it</label>
+    </div>
+
+    <div class="field" id="attachmentManager" style="display:none;">
+      <label>Included pictures &amp; files</label>
+      <div id="attachmentList" class="announcement-editor-attachments"></div>
+    </div>
+
+    <div id="saveError" class="auth-error"></div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" id="saveBtn">Post Announcement</button>
+      <button class="btn btn-ghost" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+    </div>
+  </div>
+
+  <div id="announcementsList"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/announcements.js"></script>
+<script src="../../js/ui-modals.js"></script>
+<script>
+  const editor = document.getElementById('fBody');
+  const titleInput = document.getElementById('fTitle');
+  const publishedInput = document.getElementById('fPublished');
+  const imageInput = document.getElementById('imageInput');
+  const fileInput = document.getElementById('fileInput');
+  const attachmentManager = document.getElementById('attachmentManager');
+  const attachmentList = document.getElementById('attachmentList');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const formHeading = document.getElementById('formHeading');
+  const saveError = document.getElementById('saveError');
+
+  let editingId = null;
+  let existingAttachments = [];
+  let removedAttachmentIds = new Set();
+  let pendingUploads = new Map();
+  let savedRange = null;
+  const MAX_ANNOUNCEMENT_FILE_SIZE = 25 * 1024 * 1024;
+  const MAX_ANNOUNCEMENT_ATTACHMENTS = 10;
+
+  function showError(message){
+    saveError.textContent = message;
+    saveError.classList.add('visible');
+  }
+  function clearError(){
+    saveError.textContent = '';
+    saveError.classList.remove('visible');
+  }
+
+  function saveSelection(){
+    const sel = window.getSelection();
+    if(sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+  }
+
+  function restoreSelection(){
+    const sel = window.getSelection();
+    if(!sel || !savedRange) return;
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+
+  function runCommand(command, value = null){
+    editor.focus();
+    document.execCommand(command, false, value);
+  }
+
+  document.querySelectorAll('#richToolbar button[data-command]').forEach(button => {
+    button.addEventListener('mousedown', event => event.preventDefault());
+    button.addEventListener('click', () => runCommand(button.dataset.command));
+  });
+
+  document.querySelector('#richToolbar button[data-format]').addEventListener('mousedown', event => event.preventDefault());
+  document.querySelector('#richToolbar button[data-format]').addEventListener('click', () => runCommand('formatBlock', '<h2>'));
+
+  editor.addEventListener('keyup', saveSelection);
+  editor.addEventListener('mouseup', saveSelection);
+  editor.addEventListener('input', saveSelection);
+
+  document.getElementById('insertLinkBtn').addEventListener('mousedown', event => event.preventDefault());
+  document.getElementById('insertLinkBtn').addEventListener('click', async () => {
+    saveSelection();
+    const url = prompt('Link URL:');
+    if(!url) return;
+    restoreSelection();
+    runCommand('createLink', url.trim());
+  });
+
+  document.getElementById('insertImageBtn').addEventListener('mousedown', event => {
+    event.preventDefault();
+    saveSelection();
+  });
+  document.getElementById('insertImageBtn').addEventListener('click', () => imageInput.click());
+  document.getElementById('attachFileBtn').addEventListener('mousedown', event => {
+    event.preventDefault();
+    saveSelection();
+  });
+  document.getElementById('attachFileBtn').addEventListener('click', () => fileInput.click());
+
+  function addPendingImage(file){
+    if(file.size > MAX_ANNOUNCEMENT_FILE_SIZE){
+      showError(`${file.name} is larger than 25 MB.`);
+      return;
+    }
+    if(existingAttachments.filter(a => !removedAttachmentIds.has(a.id)).length + pendingUploads.size >= MAX_ANNOUNCEMENT_ATTACHMENTS){
+      showError(`An announcement can contain at most ${MAX_ANNOUNCEMENT_ATTACHMENTS} attachments.`);
+      return;
+    }
+    const id = `pending-${crypto.randomUUID()}`;
+    const url = URL.createObjectURL(file);
+    pendingUploads.set(id, { id, kind: 'image', file, url });
+
+    const alt = file.name.replace(/\.[^.]+$/, '').trim() || 'Announcement image';
+    restoreSelection();
+    editor.focus();
+    document.execCommand('insertHTML', false,
+      `<img loading="lazy" decoding="async" src="${rrEscAttr(url)}" data-rr-upload-id="${rrEscAttr(id)}" alt="${rrEscAttr(alt)}">`);
+    renderAttachmentManager();
+  }
+
+  imageInput.addEventListener('change', () => {
+    [...imageInput.files].forEach(addPendingImage);
+    imageInput.value = '';
+  });
+
+  fileInput.addEventListener('change', () => {
+    [...fileInput.files].forEach(file => {
+      if(file.size > MAX_ANNOUNCEMENT_FILE_SIZE){
+        showError(`${file.name} is larger than 25 MB.`);
+        return;
+      }
+      if(existingAttachments.filter(a => !removedAttachmentIds.has(a.id)).length + pendingUploads.size >= MAX_ANNOUNCEMENT_ATTACHMENTS){
+        showError(`An announcement can contain at most ${MAX_ANNOUNCEMENT_ATTACHMENTS} attachments.`);
+        return;
+      }
+      const id = `pending-${crypto.randomUUID()}`;
+      pendingUploads.set(id, { id, kind: 'file', file });
+    });
+    fileInput.value = '';
+    renderAttachmentManager();
+  });
+
+  function attachmentLabel(item){
+    const icon = item.kind === 'image' || item.is_image ? 'IMG' : 'FILE';
+    const size = rrFormatFileSize(item.file?.size ?? item.file_size);
+    return `${icon} · ${item.file?.name || item.file_name || 'Attachment'}${size ? ` · ${size}` : ''}`;
+  }
+
+  function renderAttachmentManager(){
+    const visibleExisting = existingAttachments.filter(a => !removedAttachmentIds.has(a.id));
+    const pending = [...pendingUploads.values()];
+    const hasAny = visibleExisting.length || pending.length;
+    attachmentManager.style.display = hasAny ? 'block' : 'none';
+    attachmentList.innerHTML = '';
+
+    [...visibleExisting.map(item => ({ ...item, _existing: true })), ...pending].forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'announcement-editor-attachment';
+      const name = document.createElement('span');
+      name.textContent = attachmentLabel(item);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'remove-block';
+      remove.textContent = 'Remove';
+      remove.addEventListener('click', () => {
+        if(item._existing){
+          removedAttachmentIds.add(item.id);
+          if(item.is_image){
+            editor.querySelectorAll(`img[data-rr-storage-path="${CSS.escape(item.storage_path)}"]`).forEach(img => img.remove());
+          }
+        } else {
+          pendingUploads.delete(item.id);
+          if(item.url) URL.revokeObjectURL(item.url);
+          editor.querySelectorAll(`img[data-rr-upload-id="${CSS.escape(item.id)}"]`).forEach(img => img.remove());
+        }
+        renderAttachmentManager();
+      });
+      row.append(name, remove);
+      attachmentList.appendChild(row);
+    });
+  }
+
+  function resetEditor(){
+    editingId = null;
+    existingAttachments = [];
+    removedAttachmentIds = new Set();
+    pendingUploads.forEach(item => item.url && URL.revokeObjectURL(item.url));
+    pendingUploads = new Map();
+    titleInput.value = '';
+    editor.innerHTML = '';
+    publishedInput.checked = true;
+    formHeading.textContent = 'New announcement';
+    saveBtn.textContent = 'Post Announcement';
+    cancelEditBtn.style.display = 'none';
+    attachmentManager.style.display = 'none';
+    attachmentList.innerHTML = '';
+    clearError();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function normalizeEditorForUpload(){
+    // Strip signed URLs from existing uploaded images. Their stable paths are
+    // stored in data-rr-storage-path and receive fresh signed URLs when shown.
+    editor.querySelectorAll('img[data-rr-storage-path]').forEach(img => img.removeAttribute('src'));
+  }
+
+  async function uploadPendingAttachments(announcementId){
+    const uploads = [...pendingUploads.values()];
+    for(const item of uploads){
+      if(item.kind === 'image'){
+        const placeholder = editor.querySelector(`img[data-rr-upload-id="${CSS.escape(item.id)}"]`);
+        if(!placeholder) continue; // user removed it before saving
+      }
+
+      const safeName = (item.file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_');
+      const path = `${announcementId}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await rrClient.storage
+        .from(RR_ANNOUNCEMENT_BUCKET)
+        .upload(path, item.file, { upsert: false });
+      if(uploadError) throw new Error(`Could not upload ${item.file.name}: ${uploadError.message}`);
+
+      const { data: attachment, error: attachmentError } = await rrClient
+        .from('announcement_attachments')
+        .insert({
+          announcement_id: announcementId,
+          storage_path: path,
+          file_name: item.file.name,
+          mime_type: item.file.type || null,
+          file_size: item.file.size,
+          is_image: item.kind === 'image'
+        })
+        .select()
+        .single();
+
+      if(attachmentError){
+        await rrClient.storage.from(RR_ANNOUNCEMENT_BUCKET).remove([path]);
+        throw new Error(`Could not save attachment metadata: ${attachmentError.message}`);
+      }
+
+      if(item.kind === 'image'){
+        const imageEl = editor.querySelector(`img[data-rr-upload-id="${CSS.escape(item.id)}"]`);
+        if(imageEl){
+          imageEl.removeAttribute('src');
+          imageEl.removeAttribute('data-rr-upload-id');
+          imageEl.dataset.rrStoragePath = attachment.storage_path;
+        }
+      }
+    }
+  }
+
+  async function removeSelectedAttachments(){
+    if(!removedAttachmentIds.size) return;
+    const ids = [...removedAttachmentIds];
+    const removedRows = existingAttachments.filter(a => ids.includes(a.id));
+    const paths = removedRows.map(a => a.storage_path).filter(Boolean);
+    if(paths.length){
+      await rrClient.storage.from(RR_ANNOUNCEMENT_BUCKET).remove(paths);
+    }
+    const { error } = await rrClient.from('announcement_attachments').delete().in('id', ids);
+    if(error) throw error;
+  }
+
+  async function removeUnusedExistingImages(){
+    if(!existingAttachments.length) return;
+    const usedPaths = new Set(
+      [...editor.querySelectorAll('img[data-rr-storage-path]')]
+        .map(img => img.dataset.rrStoragePath)
+        .filter(Boolean)
+    );
+    const unused = existingAttachments.filter(a => a.is_image && !removedAttachmentIds.has(a.id) && !usedPaths.has(a.storage_path));
+    if(!unused.length) return;
+    await rrClient.storage.from(RR_ANNOUNCEMENT_BUCKET).remove(unused.map(a => a.storage_path));
+    await rrClient.from('announcement_attachments').delete().in('id', unused.map(a => a.id));
+  }
+
+  async function saveAnnouncement(){
+    clearError();
+    const title = titleInput.value.trim();
+    if(!title){ showError('A title is required.'); return; }
+
+    saveBtn.disabled = true;
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = editingId ? 'Saving…' : 'Posting…';
+
+    try{
+      normalizeEditorForUpload();
+      const bodyBeforeUploads = rrSerializeAnnouncementEditor(editor);
+      const published = publishedInput.checked;
+      const { data: { user } } = await rrClient.auth.getUser();
+      if(!user) throw new Error('Your admin session has expired. Please sign in again.');
+
+      let announcementId = editingId;
+      let announcement;
+      if(editingId){
+        const { data, error } = await rrClient
+          .from('announcements')
+          .update({
+            title,
+            body: bodyBeforeUploads,
+            published,
+            published_at: published ? (existingAnnouncementPublishedAt || new Date().toISOString()) : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingId)
+          .select()
+          .single();
+        if(error) throw error;
+        announcement = data;
+      } else {
+        const { data, error } = await rrClient
+          .from('announcements')
+          .insert({
+            title,
+            body: bodyBeforeUploads,
+            published,
+            published_at: published ? new Date().toISOString() : null,
+            created_by: user.id
+          })
+          .select()
+          .single();
+        if(error) throw error;
+        announcement = data;
+        announcementId = data.id;
+        // Keep the newly created row as the edit target if an upload fails; a
+        // retry updates the same announcement instead of creating a duplicate.
+        editingId = announcementId;
+        existingAnnouncementPublishedAt = data.published_at;
+      }
+
+      await uploadPendingAttachments(announcementId);
+      await removeSelectedAttachments();
+      await removeUnusedExistingImages();
+
+      const finalBody = rrSerializeAnnouncementEditor(editor);
+      const { error: finalUpdateError } = await rrClient
+        .from('announcements')
+        .update({
+          title,
+          body: finalBody,
+          published,
+          published_at: published ? (announcement.published_at || new Date().toISOString()) : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', announcementId);
+      if(finalUpdateError) throw finalUpdateError;
+
+      resetEditor();
+      await loadAnnouncements();
+    } catch(err){
+      console.error(err);
+      showError(err.message || 'Could not save the announcement.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = originalText;
+    }
+  }
+
+  let existingAnnouncementPublishedAt = null;
+
+  async function editAnnouncement(id){
+    clearError();
+    const { data: announcement, error } = await rrClient.from('announcements').select('*').eq('id', id).single();
+    if(error || !announcement){ showError('Could not load that announcement.'); return; }
+    const { data: attachments, error: attachmentError } = await rrClient
+      .from('announcement_attachments')
+      .select('*')
+      .eq('announcement_id', id)
+      .order('created_at', { ascending: true });
+    if(attachmentError){ showError('Could not load the announcement attachments.'); return; }
+
+    resetEditor();
+    editingId = id;
+    existingAnnouncementPublishedAt = announcement.published_at;
+    existingAttachments = attachments || [];
+    titleInput.value = announcement.title;
+    publishedInput.checked = announcement.published;
+    // Load the stored body and preserve each image's stable storage-path
+    // attribute while giving the editor a fresh signed URL to display.
+    editor.innerHTML = rrSanitizeAnnouncementHtml(announcement.body);
+    const rawDoc = new DOMParser().parseFromString(announcement.body || '', 'text/html');
+    const rawImages = [...rawDoc.body.querySelectorAll('img[data-rr-storage-path]')];
+    const editImages = [...editor.querySelectorAll('img[data-rr-storage-path]')];
+    for(let i = 0; i < Math.min(rawImages.length, editImages.length); i++){
+      const url = await rrCreateAnnouncementSignedUrl(rawImages[i].dataset.rrStoragePath);
+      if(url) editImages[i].src = url;
+    }
+
+    formHeading.textContent = 'Edit announcement';
+    saveBtn.textContent = 'Save Changes';
+    cancelEditBtn.style.display = 'inline-flex';
+    renderAttachmentManager();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function deleteAnnouncement(id){
+    if(!(await rrConfirm('Delete this announcement and all of its attachments?'))) return;
+    try{
+      const { data: attachments } = await rrClient
+        .from('announcement_attachments')
+        .select('storage_path')
+        .eq('announcement_id', id);
+      const paths = (attachments || []).map(a => a.storage_path).filter(Boolean);
+      if(paths.length) await rrClient.storage.from(RR_ANNOUNCEMENT_BUCKET).remove(paths);
+      const { error } = await rrClient.from('announcements').delete().eq('id', id);
+      if(error) throw error;
+      if(editingId === id) resetEditor();
+      await loadAnnouncements();
+    } catch(err){
+      await rrAlert('Could not delete the announcement: ' + (err.message || 'unknown error'));
+    }
+  }
+
+  async function loadAnnouncements(){
+    const list = document.getElementById('announcementsList');
+    const { data, error } = await rrClient
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if(error){
+      list.innerHTML = `<p style="color:#ff8a70; font-size:13px;">Could not load announcements.</p>`;
+      return;
+    }
+    if(!data || !data.length){
+      list.innerHTML = `<p style="color:var(--muted); font-size:13px; margin-top:20px;">No announcements posted yet.</p>`;
+      return;
+    }
+
+    const attachments = await rrFetchAnnouncementAttachments(data.map(a => a.id));
+    list.innerHTML = '';
+    data.forEach(a => {
+      const block = document.createElement('div');
+      block.className = 'editor-block';
+      const excerpt = rrAnnouncementText(a.body);
+      const attachCount = (attachments[a.id] || []).length;
+      block.innerHTML = `
+        <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start;">
+          <div style="min-width:0; flex:1;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:5px;">
+              <h3 style="margin:0;">${escapeHtml(a.title)}</h3>
+              <span class="status-pill ${a.published ? 'published' : 'draft'}">${a.published ? 'Published' : 'Draft'}</span>
+            </div>
+            <p style="color:var(--muted); font-size:12px; margin:0 0 6px;">${escapeHtml(rrFormatAnnouncementDateTime(a.published_at || a.created_at))}${attachCount ? ` · ${attachCount} attachment${attachCount === 1 ? '' : 's'}` : ''}</p>
+            <p style="color:var(--muted); font-size:12.5px; line-height:1.5; margin:0;">${escapeHtml(excerpt.slice(0, 220))}${excerpt.length > 220 ? '…' : ''}</p>
+          </div>
+          <div class="admin-row-actions">
+            <button data-edit="${a.id}">Edit</button>
+            <button class="danger" data-delete="${a.id}">Delete</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(block);
+      block.querySelector('[data-edit]').addEventListener('click', () => editAnnouncement(a.id));
+      block.querySelector('[data-delete]').addEventListener('click', () => deleteAnnouncement(a.id));
+    });
+  }
+
+  saveBtn.addEventListener('click', saveAnnouncement);
+  cancelEditBtn.addEventListener('click', resetEditor);
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: '../index.html' });
+    if(!profile) return;
+    await loadAnnouncements();
+  })();
+</script>
+</body>
+</html>

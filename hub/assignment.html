@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment — Red Rock Robotics</title>
+<link rel="icon" href="../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="home.html">
+    <img loading="lazy" decoding="async" src="../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="home.html">← All Subteams</a>
+  </div>
+</header>
+
+<div class="docs-body" id="assignmentContainer" style="padding-top:40px;">
+  <p style="color:var(--muted); font-size:13px;">Loading…</p>
+</div>
+
+<footer>
+  <div>FRC Team 3006 — Red Rock Robotics</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="../js/supabase-config.js"></script>
+<script src="../js/supabase-client.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/assignments.js"></script>
+<script>
+  (async () => {
+    const profile = await rrRequireSession();
+    if(!profile) return;
+
+    const id = new URLSearchParams(window.location.search).get("id");
+    const container = document.getElementById('assignmentContainer');
+    if(!id){
+      container.innerHTML = `<p style="color:var(--muted); font-size:13px;">No assignment specified.</p>`;
+      return;
+    }
+    const a = await rrLoadAssignmentDetail(id, container);
+    if(a) document.title = a.title + " — Red Rock Robotics";
+  })();
+</script>
+</body>
+</html>

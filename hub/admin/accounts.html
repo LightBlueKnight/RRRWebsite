@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accounts — Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:900px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Accounts</h2></div>
+  <p class="section-sub">
+    Every account on the hub. Parent access uses temporary codes, not accounts, so it won't show up here.
+  </p>
+  <input type="text" class="search-box" id="acctSearch" placeholder="Search by username…">
+  <br>
+  <table class="admin-table">
+    <thead><tr><th>Username</th><th>Role</th><th>Created</th><th></th></tr></thead>
+    <tbody id="acctRows">
+      <tr><td colspan="4" style="color:var(--muted);">Loading…</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/ui-modals.js"></script>
+<script>
+  let allAccounts = [];
+  let myId = null;
+
+  function renderAccountRows(list){
+    const body = document.getElementById('acctRows');
+    body.innerHTML = "";
+    if(!list || list.length === 0){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--muted);">No accounts found.</td></tr>`;
+      return;
+    }
+    list.forEach(a => {
+      const tr = document.createElement('tr');
+      const isMe = a.id === myId;
+      tr.innerHTML = `
+        <td>${escapeHtml(a.username)}${isMe ? ' <span style="color:var(--muted); font-size:11px;">(you)</span>' : ''}</td>
+        <td>${escapeHtml(a.role)}</td>
+        <td style="color:var(--muted); font-size:12px;">${new Date(a.created_at).toLocaleDateString()}</td>
+        <td class="row-actions">
+          ${isMe ? '' : `<button class="danger" data-id="${a.id}" data-username="${escapeHtml(a.username)}">Delete</button>`}
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('button.danger').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!(await rrConfirm(`Delete the account "${btn.dataset.username}"? This cannot be undone.`))) return;
+        const userId = btn.dataset.id;
+        const { data: submissions, error: subErr } = await rrClient
+          .from('assignment_submissions')
+          .select('file_path')
+          .eq('member_id', userId);
+        if(subErr){ await rrAlert('Could not prepare the account for deletion: ' + subErr.message); return; }
+
+        const { error } = await rrClient.rpc('admin_delete_account', { p_user_id: userId });
+        if(error){ await rrAlert('Could not delete: ' + error.message); return; }
+
+        const paths = (submissions || []).map(s => s.file_path).filter(Boolean);
+        if(paths.length){
+          const { error: storageErr } = await rrClient.storage.from('assignment-submissions').remove(paths);
+          if(storageErr) console.error('Account submission cleanup failed:', storageErr);
+        }
+        loadAccounts();
+      });
+    });
+  }
+
+  async function loadAccounts(){
+    const { data, error } = await rrClient
+      .from('profiles')
+      .select('id, username, role, created_at')
+      .in('role', ['member','admin'])  // parent sessions are anonymous/temporary, not real accounts
+      .order('created_at', { ascending: false });
+    allAccounts = (!error && data) ? data : [];
+    renderAccountRows(allAccounts);
+  }
+
+  document.getElementById('acctSearch').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    renderAccountRows(q ? allAccounts.filter(a => a.username.toLowerCase().includes(q)) : allAccounts);
+  });
+
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    const { data: { user } } = await rrClient.auth.getUser();
+    myId = user.id;
+    loadAccounts();
+  })();
+</script>
+</body>
+</html>

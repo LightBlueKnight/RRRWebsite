@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements — Red Rock Robotics</title>
+<link rel="icon" href="images/logos/logonobackground.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ================= CODE GATE ================= -->
+<div class="auth-wrap" id="gate">
+  <div class="auth-card">
+    <img loading="lazy" decoding="async" class="auth-logo" src="images/logos/logonobackground.png" alt="Red Rock Robotics logo">
+    <div class="num">TEAM 3006</div>
+    <h1>Announcements</h1>
+    <p class="sub">Enter the parent code to view team announcements and attachments.</p>
+    <div class="auth-error" id="gateError"></div>
+    <div class="field">
+      <label for="parentCode">Parent code</label>
+      <input type="text" id="parentCode" autocomplete="off">
+    </div>
+    <button class="btn btn-grad" style="width:100%; justify-content:center;" id="gateBtn">Continue</button>
+  </div>
+</div>
+
+<div id="announcementsPage" style="display:none;">
+  <header class="topnav">
+    <a class="brand" href="parents.html">
+      <img src="images/logos/logonobackground.png" alt="">
+      <div class="brand-text">
+        <div class="num">TEAM 3006</div>
+        <div class="name">Red Rock Robotics</div>
+      </div>
+    </a>
+    <div class="topnav-links">
+      <a href="parents.html">← Parent Home</a>
+    </div>
+  </header>
+
+  <section class="subteam-hero">
+    <div class="eyebrow">Parent Resources</div>
+    <h1>Announcements</h1>
+    <p>Updates, reminders, and documents posted by the team.</p>
+  </section>
+
+  <main class="announcement-catalog section">
+    <div id="catalogList">
+      <p class="announcement-empty">Loading announcements…</p>
+    </div>
+  </main>
+
+  <footer>
+    <div>FRC Team 3006 — Red Rock Robotics · Salt Lake City, UT</div>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client-parent.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/announcements.js"></script>
+<script src="js/parents.js"></script>
+<script src="js/ui-modals.js"></script>
+<script>
+  const gate = document.getElementById('gate');
+  const page = document.getElementById('announcementsPage');
+  const gateError = document.getElementById('gateError');
+  const catalogList = document.getElementById('catalogList');
+
+  const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+  let idleTimer = null;
+
+  function resetIdleTimer(){
+    if(page.style.display === 'none') return;
+    if(idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(autoLogout, IDLE_TIMEOUT_MS);
+  }
+
+  async function autoLogout(){
+    await rrClient.auth.signOut();
+    page.style.display = 'none';
+    gate.style.display = 'flex';
+    document.getElementById('parentCode').value = '';
+    gateError.textContent = 'You were signed out after being inactive.';
+    gateError.classList.add('visible');
+  }
+
+  ['mousemove','keydown','click','touchstart','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+
+  async function renderCatalog(){
+    try {
+      const announcements = await rrFetchAnnouncementsWithAttachments({ publishedOnly: true });
+      if(!announcements.length){
+        catalogList.innerHTML = `<p class="announcement-empty">No announcements have been posted yet.</p>`;
+        return;
+      }
+
+      catalogList.innerHTML = '';
+      for(const announcement of announcements){
+        const article = document.createElement('article');
+        article.className = 'announcement-full-card';
+        article.id = `announcement-${announcement.id}`;
+        article.innerHTML = `
+          <div class="announcement-meta">${esc(rrFormatAnnouncementDate(announcement.published_at || announcement.created_at))}</div>
+          <h2>${esc(announcement.title)}</h2>
+          <div class="announcement-rich-body"></div>
+          <div class="announcement-attachments" data-announcement-attachments></div>
+        `;
+        catalogList.appendChild(article);
+
+        await rrRenderAnnouncementBody(article.querySelector('.announcement-rich-body'), announcement.body);
+        await rrRenderAnnouncementAttachments(article.querySelector('[data-announcement-attachments]'), announcement.attachments || []);
+      }
+
+      const id = new URLSearchParams(window.location.search).get('id');
+      if(id){
+        const target = document.getElementById(`announcement-${CSS.escape(id)}`);
+        if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } catch(err){
+      console.error(err);
+      catalogList.innerHTML = `<p class="announcement-empty">Announcements could not be loaded right now.</p>`;
+    }
+  }
+
+  async function enterPage(){
+    gate.style.display = 'none';
+    page.style.display = 'block';
+    await renderCatalog();
+    resetIdleTimer();
+  }
+
+  document.getElementById('gateBtn').addEventListener('click', async () => {
+    gateError.classList.remove('visible');
+    try {
+      await rrParentGate(document.getElementById('parentCode').value);
+      await enterPage();
+    } catch(err){
+      gateError.textContent = err.message || 'That code is not valid.';
+      gateError.classList.add('visible');
+    }
+  });
+
+  (async () => {
+    if(await rrParentAlreadyGated()){
+      await enterPage();
+    }
+  })();
+</script>
+</body>
+</html>

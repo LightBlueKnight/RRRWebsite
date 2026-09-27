@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parents & Calendar — Admin — Red Rock Robotics</title>
+<link rel="icon" href="../../images/logos/logonobackground.png">
+<link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+<header class="topnav">
+  <a class="brand" href="../home.html">
+    <img src="../../images/logos/logonobackground.png" alt="">
+    <div class="brand-text">
+      <div class="num">TEAM 3006</div>
+      <div class="name">Red Rock Robotics</div>
+    </div>
+  </a>
+  <div class="topnav-links">
+    <a href="dashboard.html">← Admin</a>
+  </div>
+</header>
+
+<section class="section" style="max-width:900px;">
+  <div class="section-head"><span class="plate">ADMIN</span><h2>Parents &amp; Calendar</h2></div>
+  <p class="section-sub">Click any day to see its food signup and resource requests, or add a new request.</p>
+
+  <div class="cal-head">
+    <h2 id="calTitle">Loading…</h2>
+    <div class="cal-nav">
+      <button id="prevMonth">←</button>
+      <button id="nextMonth">→</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</section>
+
+<!-- ================= DAY DETAIL MODAL ================= -->
+<div class="rr-modal-bg" id="dayModalBg">
+  <div class="rr-modal day-detail-modal">
+    <h3 id="ddDate">Day</h3>
+    <p class="sub">Everything happening on this day.</p>
+
+    <div class="dd-section">
+      <span class="dd-section-label">Open for parent volunteering?</span>
+      <button class="volunteer-toggle-btn" id="ddOpenToggle"></button>
+      <p style="font-size:11px; color:var(--muted); margin-top:6px;">
+        Tip: shift + right-click a day on the calendar to toggle this without opening the modal.
+      </p>
+    </div>
+
+    <div class="dd-section">
+      <span class="dd-section-label">Day events</span>
+      <div id="ddEvents"></div>
+      <div class="field" style="margin-top:8px;">
+        <input type="text" id="ddEventText" placeholder="e.g. Regional kickoff meeting">
+      </div>
+      <button class="btn btn-ghost" id="ddAddEventBtn" style="width:100%; justify-content:center;">Add Event</button>
+    </div>
+
+    <div class="dd-section">
+      <span class="dd-section-label">Food signup</span>
+      <div id="ddFood"></div>
+    </div>
+
+    <div class="dd-section">
+      <span class="dd-section-label">Resource requests</span>
+      <div id="ddRequests"></div>
+    </div>
+
+    <div class="dd-section">
+      <span class="dd-section-label">Add a resource request</span>
+      <div class="field"><label>Title</label><input type="text" id="reqTitle" placeholder="e.g. Pit crew volunteers"></div>
+      <div class="field"><label>Description</label><input type="text" id="reqDesc"></div>
+      <div class="field"><label>Volunteers needed</label><input type="text" id="reqSlots" value="1" style="max-width:80px;"></div>
+      <button class="btn btn-primary" id="addReqBtn" style="width:100%; justify-content:center;">Add Request</button>
+    </div>
+
+    <button class="rr-modal-close" id="ddCloseBtn">Close</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
+<script src="../../js/supabase-config.js"></script>
+<script src="../../js/supabase-client.js"></script>
+<script src="../../js/utils.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/admin-calendar.js"></script>
+<script src="../../js/ui-modals.js"></script>
+<script>
+  const calGrid = document.getElementById('calGrid');
+  const calTitle = document.getElementById('calTitle');
+  const dayModalBg = document.getElementById('dayModalBg');
+  let activeDate = null;
+
+
+  window.rrOpenAdminDayModal = function(dateStr, dayData){
+    activeDate = dateStr;
+    document.getElementById('ddDate').textContent = dateStr;
+
+    // ---- open/closed toggle ----
+    renderOpenToggle(dayData.open);
+
+    // ---- day events ----
+    renderEvents(dayData.events);
+
+    // ---- food section ----
+    const foodEl = document.getElementById('ddFood');
+    if(dayData.food){
+      foodEl.innerHTML = `
+        <div class="dd-item">
+          <div class="dd-item-top">
+            <span class="dd-item-title">${esc(dayData.food.parent_name)}</span>
+            <button class="danger" id="delFoodBtn">Delete</button>
+          </div>
+          <div class="dd-item-desc">${esc(dayData.food.food_description)}${dayData.food.vegetarian ? ' · Vegetarian option' : ''}</div>
+        </div>
+      `;
+      document.getElementById('delFoodBtn').addEventListener('click', async () => {
+        if(!(await rrConfirm('Delete this food signup?'))) return;
+        await rrClient.from('meal_signups').delete().eq('id', dayData.food.id);
+        dayModalBg.classList.remove('open');
+        rrRenderAdminCalendar(calGrid, calTitle);
+      });
+    } else {
+      foodEl.innerHTML = `<p style="color:var(--muted); font-size:12.5px;">No one has signed up to bring food.</p>`;
+    }
+
+    // ---- resource requests section ----
+    renderRequests(dayData.requests);
+
+    dayModalBg.classList.add('open');
+  };
+
+  function renderOpenToggle(isOpen){
+    const btn = document.getElementById('ddOpenToggle');
+    btn.className = 'volunteer-toggle-btn ' + (isOpen ? 'is-open' : 'is-closed');
+    btn.textContent = isOpen ? '✓ Open — parents can volunteer this day' : 'Closed — click to open for volunteering';
+    btn.onclick = async () => {
+      const { data: { user } } = await rrClient.auth.getUser();
+      if(isOpen){
+        await rrClient.from('volunteer_days').delete().eq('event_date', activeDate);
+      } else {
+        await rrClient.from('volunteer_days').insert({ event_date: activeDate, created_by: user.id });
+      }
+      dayModalBg.classList.remove('open');
+      await rrRenderAdminCalendar(calGrid, calTitle);
+    };
+  }
+
+  function renderEvents(events){
+    const el = document.getElementById('ddEvents');
+    if(!events || events.length === 0){
+      el.innerHTML = `<p style="color:var(--muted); font-size:12px;">No events posted for this day.</p>`;
+      return;
+    }
+    el.innerHTML = "";
+    events.forEach(ev => {
+      const row = document.createElement('div');
+      row.className = 'dd-event-item';
+      row.innerHTML = `<span>${esc(ev.text)}</span><button data-id="${ev.id}">Delete</button>`;
+      el.appendChild(row);
+    });
+    el.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await rrClient.from('day_events').delete().eq('id', btn.dataset.id);
+        dayModalBg.classList.remove('open');
+        await rrRenderAdminCalendar(calGrid, calTitle);
+      });
+    });
+  }
+
+  document.getElementById('ddAddEventBtn').addEventListener('click', async () => {
+    const text = document.getElementById('ddEventText').value.trim();
+    if(!text) return;
+    const { data: { user } } = await rrClient.auth.getUser();
+    const { error } = await rrClient.from('day_events').insert({ event_date: activeDate, text, created_by: user.id });
+    if(error){ await rrAlert('Could not add event: ' + error.message); return; }
+    document.getElementById('ddEventText').value = "";
+    dayModalBg.classList.remove('open');
+    await rrRenderAdminCalendar(calGrid, calTitle);
+  });
+
+  function renderRequests(requests){
+    const reqEl = document.getElementById('ddRequests');
+    if(!requests || requests.length === 0){
+      reqEl.innerHTML = `<p style="color:var(--muted); font-size:12.5px;">No resource requests for this day.</p>`;
+      return;
+    }
+    reqEl.innerHTML = "";
+    requests.forEach(r => {
+      const volunteers = r.day_resource_volunteers || [];
+      const item = document.createElement('div');
+      item.className = 'dd-item';
+      item.innerHTML = `
+        <div class="dd-item-top">
+          <span class="dd-item-title">${esc(r.title)}</span>
+          <span class="dd-slots">${volunteers.length}/${r.slots_needed} filled</span>
+        </div>
+        ${r.description ? `<div class="dd-item-desc">${esc(r.description)}</div>` : ""}
+        <div class="dd-volunteers">
+          ${volunteers.length
+            ? volunteers.map(v => `<span class="dd-volunteer-chip">${esc(v.parent_name)}</span>`).join("")
+            : `<span style="color:var(--muted); font-size:11px;">No volunteers yet</span>`}
+        </div>
+        <div class="dd-actions">
+          <button class="danger" data-req="${r.id}">Delete request</button>
+        </div>
+      `;
+      reqEl.appendChild(item);
+    });
+    reqEl.querySelectorAll('button.danger[data-req]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if(!(await rrConfirm('Delete this resource request? Any volunteer signups for it go too.'))) return;
+        await rrClient.from('day_resource_requests').delete().eq('id', btn.dataset.req);
+        dayModalBg.classList.remove('open');
+        rrRenderAdminCalendar(calGrid, calTitle);
+      });
+    });
+  }
+
+  document.getElementById('addReqBtn').addEventListener('click', async () => {
+    const title = document.getElementById('reqTitle').value.trim();
+    const description = document.getElementById('reqDesc').value.trim();
+    const slots = parseInt(document.getElementById('reqSlots').value, 10) || 1;
+    if(!title){ await rrAlert('Title is required.'); return; }
+    const { data: { user } } = await rrClient.auth.getUser();
+    const { error } = await rrClient.from('day_resource_requests').insert({
+      event_date: activeDate, title, description, slots_needed: slots, created_by: user.id,
+    });
+    if(error){ await rrAlert('Could not add request: ' + error.message); return; }
+    document.getElementById('reqTitle').value = "";
+    document.getElementById('reqDesc').value = "";
+    document.getElementById('reqSlots').value = "1";
+    dayModalBg.classList.remove('open');
+    await rrRenderAdminCalendar(calGrid, calTitle);
+  });
+
+  document.getElementById('ddCloseBtn').addEventListener('click', () => dayModalBg.classList.remove('open'));
+
+  document.getElementById('prevMonth').addEventListener('click', async () => {
+    adminCalMonth.setMonth(adminCalMonth.getMonth() - 1);
+    await rrRenderAdminCalendar(calGrid, calTitle);
+  });
+  document.getElementById('nextMonth').addEventListener('click', async () => {
+    adminCalMonth.setMonth(adminCalMonth.getMonth() + 1);
+    await rrRenderAdminCalendar(calGrid, calTitle);
+  });
+
+  (async () => {
+    const profile = await rrRequireSession({ requireAdmin: true, loginPath: "../index.html" });
+    if(!profile) return;
+    await rrRenderAdminCalendar(calGrid, calTitle);
+  })();
+</script>
+</body>
+</html>
